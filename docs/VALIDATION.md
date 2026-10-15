@@ -18,13 +18,17 @@
 
 ## 장치 없는 검사
 
-- Python19개: 범위/정렬/형식/FD alias, lease, 부분완료, notify 실패, stale completion, TTL, fingerprint, capacity, sidecar output-limit rewrite.
+- Python22개: 범위/정렬/형식/FD alias, lease, 부분완료, notify 실패, stale completion, TTL, fingerprint, capacity, sidecar output-limit rewrite.
 - native rejection11개: malformed plan은 장치를 열기 전에 exit2로 거부. CPU memfd 사용; 이 검사를 실제 DMA 시험으로 집계하지 않음.
 - C는 `-Wall -Wextra -Werror -O2`로 빌드.
 - Python wheel 빌드 성공. Core는 vendor SDK를 import하지 않음.
 
 ## 비교 실험과 구분
 
-[단독/독립 서빙/PD 비교](benchmark/RESULTS_KO.md)는 이 라이브러리 분리 전에 동일 모델·길이 조건으로 수행한 별도 성능 시험이다. 현재 짧은 입력에서는 RNGD 네이티브 단독이 커스텀 PD보다 빨랐으며 전력효율도 높았다. 라이브러리 검증4요청의 HTTP 시간으로 benchmark 수치를 대체하지 않는다.
+[단독/독립 서빙/PD 비교](benchmark/RESULTS_KO.md)는 이 라이브러리 분리 전에 동일 모델·길이 조건으로 수행한 별도 성능 시험이다. 초기 B1 짧은 입력에서는 RNGD 네이티브 단독이 커스텀 PD보다 빨랐으며 전력효율도 높았다. 이후 B4 및 긴 입력 결과는 [새 비교 기록](benchmark-b4/RESULTS_KO.md)에 별도로 보존했다. B4 PD는 처리량이 높았지만 ATOM 단독보다 에너지 효율은 낮았다. 라이브러리 검증4요청의 HTTP 시간으로 benchmark 수치를 대체하지 않는다.
 
 같은 batch host/P2P full-logit 일치는 **전송 경로의 정확도** 증거다. RNGD NativeLLMEngine·ATOM 단독·커스텀 PD 사이의 모델 출력 품질 동등성을 입증하지 않는다.
+
+## 최적화된 B4 라이브러리 경로
+
+라이브러리 exporter/layout/PDMA backend와 BoundedPrefixPacker를 사용하는 batch_pipeline.py로 입력140/167/227/271, 출력32/128의128요청을 완료했다. 모든 full logits가 해당 batch host 기준과 exact, 동일 버퍼 admission/decode 겹침0이었다. 초기 실패(config 변수 shadowing)는 DMA 전에 중단되어 별도 보존했다. 결과와 소스 hash는 batch-hardware-validation.json, 원시는 results/batch-r2에 있다. HTTP llm-d 예제의 B4 batching 검증은 아니다.

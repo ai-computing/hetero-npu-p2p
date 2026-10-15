@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "requests": 128,
+  "measured_requests": 96,
+  "waves": 8,
+  "measured_waves": 6,
+  "all_full_logits_exact": true,
+  "same_buffer_overlap_count": 0,
+  "summary": [
+    {
+      "output_length": 32,
+      "repeats": 3,
+      "tokens_s": 87.8279228539674,
+      "tokens_J": 0.5365083432630773
+    },
+    {
+      "output_length": 128,
+      "repeats": 3,
+      "tokens_s": 96.88482922183434,
+      "tokens_J": 0.5984736763655705
+    }
+  ],
+  "source_hashes": {
+    "src/hetero_p2p/adapters/rngd_dlfloat.py": "ef1e57c5897eff8d63f4f70aec23951911294f567f10f0fbdff2fb989f89ff9f",
+    "src/hetero_p2p/backend.py": "5982d22c3b860b5a8f1ad4e5f53af952e96af8d6cb31a6e6df7cd4439cfbc02d",
+    "examples/koni/batch_pipeline.py": "3daac3f8260eacbcd7098a30ecd6173a7aca6a115d992b100fc3f5e8f518f934",
+    "examples/koni/batch_worker.py": "897664e5ed287d4c0dc3d386d26628ad3b84d338bf2c07b8fad731ab378f4d7b",
+    "examples/koni/batch_control.py": "33109f5af3d0f65a7964a75096ce223a478642bbe37b7b7d4d6327f6d39291de",
+    "build/rngd-pdma": "ee1a52c704c4ab1dc4dbdefdefe237c30a481492aad3863b9f59f0b3dc81fbfe"
+  },
+  "raw": "results/batch-r2",
+  "failed_attempt": "results/batch-r1-failed: config variable shadowing, no DMA started",
+  "original_out": "/tmp/hetero-koni-b4-r2",
+  "scope": "RNGD1 -> ATOM2/3, KONI B4, four prompts input140/167/227/271 output32/128; benchmark pipeline, not llm-d HTTP microbatching",
+  "python_tests": 22,
+  "wheel_version": "0.2.0"
+}

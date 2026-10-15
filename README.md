@@ -6,7 +6,9 @@
 
 ## 현재 성능 판단
 
-동일9토큰 입력·32토큰 출력의 별도 비교에서 RNGD 네이티브 단독은61.30 tok/s·0.417 tok/J, 커스텀 이종 PD는27.84 tok/s·0.183 tok/J였습니다. 현재 조건에서 PD의 성능·전력효율 우위는 없습니다. 런타임 간 greedy 출력도 달라 품질 동등성을 주장하지 않습니다. 이 프로젝트는 검증된 데이터 이동 경로를 재사용하기 위한 것이며, PD를 항상 더 빠르게 만드는 기능은 아닙니다.
+초기 B1 비교에서는 PD가 RNGD 단독보다 느렸습니다(기록은 `docs/benchmark/`). 이후 B4 디코드·replica pipeline·긴 prefix 변환을 적용한 별도 연구 시험에서는 입력140–271/출력32·128의 한국어4질의에서 PD가89.65·98.28 tok/s, RNGD 단독이61.56·66.28 tok/s, 제조사 ATOM 단독이40.15·52.26 tok/s였습니다. **PD는3장, 단독은1장**이며 에너지 효율은 ATOM 단독이 더 좋았습니다. 제한된 입력 집합의 결과로 일반적인 품질·성능 우위를 주장하지 않습니다.
+
+최적화 경로를 라이브러리로 재실행하는 방법은 [batch pipeline](docs/BATCH_PIPELINE.md)에 있습니다. 하드웨어 검증 기록과 원시 근거를 함께 확인해야 합니다.
 
 ## 구조
 
@@ -15,7 +17,8 @@
 - `layout.py`: 명시적인 token-major 물리 KV 배치로 prefix 전송 계획 생성. dtype 변환은 모델 adapter가 담당합니다.
 - `atom_experimental.py`: 동일 프로세스의 live allocation trace와 검증된 thunk ABI를 사용하는 export adapter. `experimental=True`가 필요하며 정적 resident cache는 지원하지 않습니다.
 - `llmd.py`: llm-d shared-storage stage 계약용 broker. 요청 ID·모델·prompt fingerprint, 용량, TTL, 순서, 실패 격리를 검사합니다. HTTP에는 요청/응답과 제어 정보만 오가며 KV는 P2P로 이동합니다.
-- `examples/koni/`: 기존 KONI 모델 adapter를 연결한 실제 장치 검증 예제. 고정9토큰 prompt / 출력32 / B1에 제한됩니다. 일반 production serving API로 표시하지 않습니다.
+- `adapters/rngd_dlfloat.py`: BF16 KV를 DLFloat16 carrier로 변환하는 선택적 RNGD adapter와 작은 그래프를 재사용하는 prefix packer.
+- `examples/koni/`: HTTP/llm-d B1 fixture 및 별도의 설정 가능한 B4 batch benchmark. B4는 서로 다른 길이의4개 token prompt를 지원하며 production HTTP batching은 아직 포함하지 않습니다.
 
 ## 설치와 검사
 
@@ -57,6 +60,6 @@ session.finish_decode(request_id, passed=True)
 
 [llm-d 연동 문서](docs/LLMD.md), [지원 범위](docs/SUPPORT.md), [검증 기록](docs/VALIDATION.md)을 참고하세요. 이 구현은 llm-d를 KV 복사 경로로 사용하지 않습니다. llm-d shared-storage 계약으로 prefill→decode를 호출하고, 같은 노드의 owner 프로세스가 DMA와 cache lease를 관리합니다.
 
-이 프로젝트는 NIXL/Mooncake connector나 원격 노드 RDMA 구현이 아닙니다. Kubernetes 배포, 토큰 streaming, chat template, 자동 모델 컴파일, 일반 prompt 처리는 현재 검증 예제의 범위 밖입니다.
+이 프로젝트는 NIXL/Mooncake connector나 원격 노드 RDMA 구현이 아닙니다. Kubernetes 배포, 토큰 streaming, chat template, 자동 모델 컴파일, 일반 HTTP prompt 처리·동적 microbatching은 현재 검증 예제의 범위 밖입니다.
 
 Git 저장소는 로컬에 생성했습니다. 원격 저장소 생성·push·공개 배포는 하지 않았으며 배포 라이선스는 별도 결정이 필요합니다.

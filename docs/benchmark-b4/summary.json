@@ -1,0 +1,288 @@
+{
+  "summary": [
+    {
+      "mode": "PD",
+      "output_length": 32,
+      "n": 3,
+      "tokens_s": 89.65377263384646,
+      "tokens_J": 0.5527184542882675,
+      "mean_W": 162.20513706077196,
+      "wall_seconds": 5.710858394002571
+    },
+    {
+      "mode": "PD",
+      "output_length": 128,
+      "n": 3,
+      "tokens_s": 98.28469947503194,
+      "tokens_J": 0.6069753276917096,
+      "mean_W": 161.43653807121171,
+      "wall_seconds": 20.837424450997787
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 32,
+      "n": 3,
+      "tokens_s": 61.564730513395986,
+      "tokens_J": 0.4023152555389244,
+      "mean_W": 153.0260900271517,
+      "wall_seconds": 8.316449950001697
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 128,
+      "n": 3,
+      "tokens_s": 66.28381958862907,
+      "tokens_J": 0.4326257837767048,
+      "mean_W": 152.29800325310438,
+      "wall_seconds": 30.897434889997385
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 32,
+      "n": 3,
+      "tokens_s": 40.154340536006636,
+      "tokens_J": 0.6254661779422103,
+      "mean_W": 64.1990597606969,
+      "wall_seconds": 12.750800864003395
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 128,
+      "n": 3,
+      "tokens_s": 52.255485781751915,
+      "tokens_J": 0.8713159117414992,
+      "mean_W": 59.56488442122599,
+      "wall_seconds": 39.19205743400016
+    }
+  ],
+  "waves": [
+    {
+      "mode": "PD",
+      "output_length": 32,
+      "repeat": 0,
+      "tokens_s": 89.65377263384646,
+      "tokens_J": 0.5527184542882675,
+      "mean_W": 162.20513706077196,
+      "wall_seconds": 5.710858394002571,
+      "board_joules": {
+        "rngd": 332.55924714826637,
+        "atom-2": 307.07237890665886,
+        "atom-3": 286.69894247892194
+      }
+    },
+    {
+      "mode": "PD",
+      "output_length": 128,
+      "repeat": 0,
+      "tokens_s": 100.12516843842099,
+      "tokens_J": 0.6069753276917096,
+      "mean_W": 164.9575590151101,
+      "wall_seconds": 20.454397549998248,
+      "board_joules": {
+        "rngd": 1095.9342873705027,
+        "atom-2": 1157.8202833525677,
+        "atom-3": 1120.352920249289
+      }
+    },
+    {
+      "mode": "PD",
+      "output_length": 32,
+      "repeat": 1,
+      "tokens_s": 90.64875154143625,
+      "tokens_J": 0.5430846999099316,
+      "mean_W": 166.91457438677608,
+      "wall_seconds": 5.648174865000328,
+      "board_joules": {
+        "rngd": 346.84933539846315,
+        "atom-2": 310.0950453079661,
+        "atom-3": 285.8183229471871
+      }
+    },
+    {
+      "mode": "PD",
+      "output_length": 128,
+      "repeat": 1,
+      "tokens_s": 98.28469947503194,
+      "tokens_J": 0.6088132256136298,
+      "mean_W": 161.43653807121171,
+      "wall_seconds": 20.837424450997787,
+      "board_joules": {
+        "rngd": 1055.363319768445,
+        "atom-2": 1160.890949009108,
+        "atom-3": 1147.6673969119488
+      }
+    },
+    {
+      "mode": "PD",
+      "output_length": 32,
+      "repeat": 2,
+      "tokens_s": 86.61117241310588,
+      "tokens_J": 0.5548075950500582,
+      "mean_W": 156.11028613494608,
+      "wall_seconds": 5.911477534998994,
+      "board_joules": {
+        "rngd": 320.98520065819685,
+        "atom-2": 324.5267776625134,
+        "atom-3": 277.33047114828844
+      }
+    },
+    {
+      "mode": "PD",
+      "output_length": 128,
+      "repeat": 2,
+      "tokens_s": 97.80671385076555,
+      "tokens_J": 0.606561674777494,
+      "mean_W": 161.24776410683074,
+      "wall_seconds": 20.939257842001098,
+      "board_joules": {
+        "rngd": 1029.7120192415714,
+        "atom-2": 1193.8233388782942,
+        "atom-3": 1152.8731509592335
+      }
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 32,
+      "repeat": 0,
+      "tokens_s": 62.91442982152248,
+      "tokens_J": 0.4187651728377196,
+      "mean_W": 150.2379708302609,
+      "wall_seconds": 8.138037672000792,
+      "board_joules": {
+        "rngd": 1222.6422663816193
+      }
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 128,
+      "repeat": 0,
+      "tokens_s": 67.10479063804321,
+      "tokens_J": 0.44176548145087313,
+      "mean_W": 151.90138989052193,
+      "wall_seconds": 30.519430587999523,
+      "board_joules": {
+        "rngd": 4635.943924984436
+      }
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 128,
+      "repeat": 1,
+      "tokens_s": 65.88804302500142,
+      "tokens_J": 0.4326257837767048,
+      "mean_W": 152.29800325310438,
+      "wall_seconds": 31.083029727000394,
+      "board_joules": {
+        "rngd": 4733.883362479046
+      }
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 32,
+      "repeat": 1,
+      "tokens_s": 61.564730513395986,
+      "tokens_J": 0.4023152555389244,
+      "mean_W": 153.0260900271517,
+      "wall_seconds": 8.316449950001697,
+      "board_joules": {
+        "rngd": 1272.633818755261
+      }
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 32,
+      "repeat": 2,
+      "tokens_s": 61.41917183510613,
+      "tokens_J": 0.3929078412866247,
+      "mean_W": 156.3195370038469,
+      "wall_seconds": 8.336159291997319,
+      "board_joules": {
+        "rngd": 1303.104560915337
+      }
+    },
+    {
+      "mode": "RNGD solo",
+      "output_length": 128,
+      "repeat": 2,
+      "tokens_s": 66.28381958862907,
+      "tokens_J": 0.42580965987858843,
+      "mean_W": 155.66537313298306,
+      "wall_seconds": 30.897434889997385,
+      "board_joules": {
+        "rngd": 4809.660731003492
+      }
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 32,
+      "repeat": 0,
+      "tokens_s": 38.93468225804669,
+      "tokens_J": 0.6419438920447417,
+      "mean_W": 60.65122316847756,
+      "wall_seconds": 13.150229315000615,
+      "board_joules": {
+        "atom-3": 797.5774929007581
+      }
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 128,
+      "repeat": 0,
+      "tokens_s": 51.18172022342316,
+      "tokens_J": 0.8648698711820154,
+      "mean_W": 59.178521450253825,
+      "wall_seconds": 40.01428617599959,
+      "board_joules": {
+        "atom-3": 2367.9862927829868
+      }
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 128,
+      "repeat": 1,
+      "tokens_s": 52.255485781751915,
+      "tokens_J": 0.8772867821284756,
+      "mean_W": 59.56488442122599,
+      "wall_seconds": 39.19205743400016,
+      "board_joules": {
+        "atom-3": 2334.4703712862706
+      }
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 32,
+      "repeat": 1,
+      "tokens_s": 40.36958925397994,
+      "tokens_J": 0.6233237125826783,
+      "mean_W": 64.76504653851954,
+      "wall_seconds": 12.682814203999442,
+      "board_joules": {
+        "atom-3": 821.4030521614205
+      }
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 32,
+      "repeat": 2,
+      "tokens_s": 40.154340536006636,
+      "tokens_J": 0.6254661779422103,
+      "mean_W": 64.1990597606969,
+      "wall_seconds": 12.750800864003395,
+      "board_joules": {
+        "atom-3": 818.5894266648996
+      }
+    },
+    {
+      "mode": "ATOM vendor solo",
+      "output_length": 128,
+      "repeat": 2,
+      "tokens_s": 52.39378981577035,
+      "tokens_J": 0.8713159117414992,
+      "mean_W": 60.131795035225366,
+      "wall_seconds": 39.08860205000019,
+      "board_joules": {
+        "atom-3": 2350.4678066841016
+      }
+    }
+  ]
+}

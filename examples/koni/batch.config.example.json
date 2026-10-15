@@ -1,0 +1,20 @@
+{
+  "out": "/tmp/hetero-koni-batch",
+  "model": "/path/to/0172bf7e73977ae213613529f3d2d5400a33f678",
+  "atom_artifact": "/path/to/6463347b9a988e0e.rbln",
+  "tables": "/path/to/tables.npz",
+  "workload": "/path/to/workload.json",
+  "helper": "/path/to/rngd-pdma",
+  "atom_python": "/path/to/python",
+  "atom_devices": [
+    2,
+    3
+  ],
+  "rngd_device_path": "/dev/rngd/npu1ch0",
+  "output_lengths": [
+    32,
+    128
+  ],
+  "warmups": 1,
+  "repeats": 3
+}
