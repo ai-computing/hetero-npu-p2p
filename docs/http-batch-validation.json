@@ -1,0 +1,109 @@
+{
+  "passed": true,
+  "requests": 177,
+  "measured_requests": 153,
+  "warmup_requests": 24,
+  "exact_full_logit_reference": true,
+  "hardware": {
+    "prefill": "RNGD1",
+    "decode": [
+      "ATOM2",
+      "ATOM3"
+    ],
+    "cards": 3
+  },
+  "output_lengths": [
+    32,
+    64,
+    96,
+    128
+  ],
+  "input_lengths": [
+    140,
+    167,
+    227,
+    271
+  ],
+  "batch_wait_ms": 10,
+  "scenario_repeats": 3,
+  "scenarios": {
+    "burst32": {
+      "tokens_per_second": [
+        88.7237978995663,
+        86.61675853023327,
+        87.92604558300353
+      ],
+      "median_tokens_per_second": 87.92604558300353,
+      "min_tokens_per_second": 86.61675853023327,
+      "max_tokens_per_second": 88.7237978995663,
+      "median_request_seconds": 4.327185642499899,
+      "max_request_seconds": 5.901664514000004
+    },
+    "burst128": {
+      "tokens_per_second": [
+        101.39977868620431,
+        100.59418407791262,
+        100.67048687932954
+      ],
+      "median_tokens_per_second": 100.67048687932954,
+      "min_tokens_per_second": 100.59418407791262,
+      "max_tokens_per_second": 101.39977868620431,
+      "median_request_seconds": 15.183778854498087,
+      "max_request_seconds": 20.349648931001866
+    },
+    "ragged": {
+      "tokens_per_second": [
+        63.07952595802425,
+        62.13649969280519,
+        60.27223047212171
+      ],
+      "median_tokens_per_second": 62.13649969280519,
+      "min_tokens_per_second": 60.27223047212171,
+      "max_tokens_per_second": 63.07952595802425,
+      "median_request_seconds": 10.048267700998622,
+      "max_request_seconds": 10.615188310999656
+    },
+    "stagger": {
+      "tokens_per_second": [
+        85.11157775594731,
+        70.94838667019418,
+        84.13019045223118
+      ],
+      "median_tokens_per_second": 84.13019045223118,
+      "min_tokens_per_second": 70.94838667019418,
+      "max_tokens_per_second": 85.11157775594731,
+      "median_request_seconds": 2.8120625624997047,
+      "max_request_seconds": 3.4232143180015555
+    },
+    "partial": {
+      "tokens_per_second": [
+        36.87746603624839,
+        36.768505266430616,
+        36.53991041397738
+      ],
+      "median_tokens_per_second": 36.768505266430616,
+      "min_tokens_per_second": 36.53991041397738,
+      "max_tokens_per_second": 36.87746603624839,
+      "median_request_seconds": 2.6094926910009235,
+      "max_request_seconds": 2.626576703001774
+    }
+  },
+  "useful_batch_widths": {
+    "4": 42,
+    "3": 3
+  },
+  "median_dma_ms": 3.1584790000000003,
+  "raw_root": "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/results/http-b4-r1",
+  "scope": "HTTP wall time through llm-d shared-storage sidecar; no power sampling in this run; same-B4 host reference, not model accuracy",
+  "source_manifest": {
+    "git_head": "5d402e727a91e7995c3da963182142299aeda181",
+    "dirty": true,
+    "sha256": {
+      "src/hetero_p2p/llmd.py": "cde9d2258f9b920a1a3b7ca627ef6de312d848bff751ebecf635fc01af1b9847",
+      "src/hetero_p2p/batching.py": "56dc5a781f25c372e586607234bbd0b1090a6501b37b43c0945a793ff074673f",
+      "examples/koni/serve_batch.py": "7383b6b1e2c643d39f6e585465db15dfff4ddb3e2e781adf50f369c0626fd3a7",
+      "examples/koni/serve_batch_worker.py": "a4f5ce4a14709edf23bcbf702cda5e00ca730098adf06fcecf5a509e3a3efc97",
+      "examples/koni/validate_batch_http.py": "836286824797d7d4f786603cf757c3bb6a1b464c4fb60d920105636ce8ac8a2f"
+    }
+  }
+}

@@ -46,18 +46,34 @@ class StageBroker:
         self.event_sink(dict(stage=stage,request_id=rid,time=time.perf_counter(),**kwargs))
 
     def _expire(self):
-        now=time.monotonic()
-        for rid,e in list(self.entries.items()):
-            if now-e.created>self.ttl and e.state=='ready':
-                self.discard(e.handle);del self.entries[rid];self._event('expired',rid)
+        # Reserve expiration under the lock, but never wait for the owner while
+        # holding it: an in-flight decode may need to complete to service discard.
+        with self.lock:
+            now=time.monotonic()
+            expired=[(rid,e) for rid,e in self.entries.items()
+                     if now-e.created>self.ttl and e.state=='ready']
+        for rid,e in expired:
+            with self.lock:
+                if self.entries.get(rid) is not e or e.state!='ready':continue
+                e.state='expiring'
+            try:
+                self.discard(e.handle)
+            except BaseException:
+                with self.lock:
+                    e.state='poisoned';self._event('expire_failed',rid)
+                raise
+            with self.lock:
+                assert self.entries.get(rid) is e and e.state=='expiring'
+                del self.entries[rid];self._event('expired',rid)
 
     def execute(self,stage,rid,body):
         if stage not in ('prefill','decode') or not isinstance(rid,str) or not rid or len(rid)>128:
             raise StageError(400,'valid stage and x-request-id required')
         prompt,count=validate_request(body,self.model,self.context)
         fingerprint=hashlib.sha256(json.dumps([self.model,prompt],separators=(',',':')).encode()).hexdigest()
+        self._expire()
         with self.lock:
-            self._expire();entry=self.entries.get(rid)
+            entry=self.entries.get(rid)
             if entry and entry.fingerprint!=fingerprint:raise StageError(409,'request ID reused for another prompt/model')
             if stage=='prefill':
                 if entry:
@@ -65,21 +81,31 @@ class StageBroker:
                     raise StageError(409,'request is not reusable')
                 if len(self.entries)>=self.capacity:raise StageError(429,'KV admission capacity reached')
                 entry=Entry(fingerprint,time.monotonic());self.entries[rid]=entry
-                try:
-                    entry.handle=self.prepare(rid,prompt);entry.state='ready';entry.created=time.monotonic()
-                    self._event('prefill_ready',rid)
-                except BaseException:
-                    entry.state='poisoned';self._event('prefill_failed',rid);raise
-                return {'id':rid,'object':'text_completion','choices':[{'text':'','index':0,'finish_reason':'stop'}]}
-            if entry is None or entry.state!='ready':raise StageError(409,'matching prefill is required before decode')
-            entry.state='decoding';self._event('decode_start',rid)
+            else:
+                if entry is None or entry.state!='ready':raise StageError(409,'matching prefill is required before decode')
+                entry.state='decoding';self._event('decode_start',rid)
+        # These callbacks may block on the owning NPU process. Holding the broker
+        # lock here serializes all requests and prevents a microbatch from filling.
+        if stage=='prefill':
             try:
-                response=self.decode(entry.handle,prompt,count)
-                if not isinstance(response,dict) or not isinstance(response.get('choices'),list):raise RuntimeError('decoder returned invalid response')
-                del self.entries[rid];self._event('decode_complete',rid)
-                return response
+                handle=self.prepare(rid,prompt)
+                with self.lock:
+                    entry.handle=handle;entry.state='ready';entry.created=time.monotonic()
+                    self._event('prefill_ready',rid)
             except BaseException:
-                entry.state='poisoned';self._event('decode_failed',rid);raise
+                with self.lock:entry.state='poisoned';self._event('prefill_failed',rid)
+                raise
+            return {'id':rid,'object':'text_completion','choices':[{'text':'','index':0,'finish_reason':'stop'}]}
+        try:
+            response=self.decode(entry.handle,prompt,count)
+            if not isinstance(response,dict) or not isinstance(response.get('choices'),list):raise RuntimeError('decoder returned invalid response')
+            with self.lock:
+                assert self.entries.get(rid) is entry and entry.state=='decoding'
+                del self.entries[rid];self._event('decode_complete',rid)
+            return response
+        except BaseException:
+            with self.lock:entry.state='poisoned';self._event('decode_failed',rid)
+            raise
 
 
 def serve_stage(broker,stage,port):
