@@ -1,0 +1,13 @@
+{
+  "out": "/tmp/hetero-koni-run",
+  "model": "/path/to/KONI-model-snapshot",
+  "atom_artifact": "/path/to/b1-external-decoder.rbln",
+  "tables": "/path/to/tables.npz",
+  "reference": "/path/to/b1-reference.npz",
+  "helper": "/path/to/hetero-npu-p2p/build/rngd-pdma",
+  "atom_python": "/path/to/atom-venv/bin/python",
+  "atom_device": 3,
+  "rngd_device_path": "/dev/rngd/npu1ch0",
+  "prefill_port": 18721,
+  "decode_port": 18722
+}
