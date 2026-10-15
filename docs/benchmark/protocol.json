@@ -1,0 +1,11 @@
+{
+ "model":"KISTI-KONI/KONI-Llama3.1-8B-Instruct-20241024",
+ "revision":"0172bf7e73977ae213613529f3d2d5400a33f678",
+ "prompt":[128000,9906,11,358,1097,264,18328,13,128009],
+ "output_tokens":32,"requests_per_wave":6,"warmups":2,"measured_repetitions":5,
+ "modes":["rngd_native_solo","atom_controlled_solo","atom_controlled_two_replicas","independent_three_boards","heterogeneous_p2p_pd"],
+ "atom_cards":[2,3],"rngd":"npu1",
+ "native_rngd_concurrency":2,"atom_batch":1,
+ "power":"Integrate allocated board watts over entire wave; no subtraction; CPU/DRAM excluded; also report three-board reserved energy",
+ "critical_limitations":["ATOM controlled solo reuses external decoder for token-by-token prefill; it is not an optimized chunk-prefill or vLLM baseline","Existing optimized ATOM artifact requires four cards and is not valid as a one-card result","Cross-backend greedy outputs can differ; report those differences, do not assert quality equivalence","Independent three-board static placement: two requests per board; not optimal adaptive routing","Input9/output32 short finite waves; no production SLO conclusion"]
+}

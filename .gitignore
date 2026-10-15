@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+build/
+dist/
+artifacts/
+results/
+*.rbln
+*.fxb
+*.safetensors
+*.whl
+*.so
+*.a

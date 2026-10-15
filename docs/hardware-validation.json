@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "kind": "actual_same_host_KONI_P2P_and_llmd",
+  "rngd_device": 1,
+  "atom_device": 3,
+  "requests": 4,
+  "upstream_sidecar_requests": 3,
+  "direct_requests": 1,
+  "dma_commands_per_request": 64,
+  "bytes_per_request": 2097152,
+  "full_logit_exact": true,
+  "decode_steps_per_request": 32,
+  "request_stage_order_verified": true,
+  "normal_shutdown": {
+    "passed": true,
+    "worker": {
+      "passed": true,
+      "requests": 4
+    }
+  },
+  "core_test_count": 19,
+  "native_rejection_count": 11,
+  "http_rejection_count": 3,
+  "helper_build": {
+    "sha256": "ee1a52c704c4ab1dc4dbdefdefe237c30a481492aad3863b9f59f0b3dc81fbfe",
+    "source_sha256": "f64f3931b35dc7496422b2a31aa75194190c86287c04cea7212c01f07e515fae",
+    "rngd_driver": "2026.4.0",
+    "command": [
+      "gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-O2",
+      "-I/usr/src/furiosa-driver-rngd-2026.4.0/include",
+      "-I/usr/src/furiosa-driver-rngd-2026.4.0/src",
+      "-Iexperiments/native_pd_2026_4/p2p_dma/devkit/liburing-2.6/src/include",
+      "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/native/rngd_pdma.c",
+      "experiments/native_pd_2026_4/p2p_dma/devkit/liburing-2.6/src/liburing.a",
+      "-o",
+      "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma"
+    ]
+  },
+  "source_hashes": {
+    "src/hetero_p2p/llmd.py": "b6b68c930ab604662714b23499d6dabab2a7e41cffbe7860d6a5c4c65db18a43",
+    "src/hetero_p2p/atom_experimental.py": "50f9bf638e326ea8cd2806bf480a09e3fd2ce35cacc3a025f2f27951b57b5135",
+    "src/hetero_p2p/layout.py": "9f65559449d13a28e3dc051eafa161edb22ff013be27ca5382e753636bce4e56",
+    "src/hetero_p2p/cli.py": "059358af939929a915aecb9335af2c1ad46de21d59fc4d5d93a6fc217372c4e4",
+    "src/hetero_p2p/backend.py": "5982d22c3b860b5a8f1ad4e5f53af952e96af8d6cb31a6e6df7cd4439cfbc02d",
+    "src/hetero_p2p/core.py": "5742eefa3cdd3951b77dc590a8442ed112a01327d789dff21e5b215791dbec4d",
+    "src/hetero_p2p/__init__.py": "809bb177408a5c09ed012634006386c3c91dbf0bd721063081ce1ba001e0dc86",
+    "examples/koni/validate_http.py": "4ce01a7331e973a455b83294ccb7f9991bd06a5b09afd404581f2b49acfb152f",
+    "examples/koni/serve.py": "5c8cd8e1aca936c7f85e441b94ad630b8932dee33f9cc4b2d4c5077f3a1fef11",
+    "examples/koni/atom_worker.py": "593bc7c18c615b639d09bb6a7842f0dafd14dffb041ea15e5dc2cec147539f76",
+    "native/rngd_pdma.c": "f64f3931b35dc7496422b2a31aa75194190c86287c04cea7212c01f07e515fae",
+    "native/build.py": "14823a1c0f14421235ce6f44aa362edcc324b094c3b60b302635044c49f8cdbb"
+  },
+  "scope": "Fixed input9/output32 B1 fixture; not cross-backend output quality parity, not Kubernetes deployment",
+  "sidecar": {
+    "upstream_commit": "5f4e762f341a5196393ce79f8a57c3e1900c4a6b",
+    "binary_sha256": "2e5e7a0eabe5e2b770ac48f875c62dd075da6f7fc1b6745baf147b3a40560274",
+    "local_patch_sha256": "275074053f2150dd1babcc2fc452976abe262e34eea5c31765cb1285afaef36b",
+    "patch_scope": "loopback listener only; existing build; no upstream PD routing changes"
+  }
+}
