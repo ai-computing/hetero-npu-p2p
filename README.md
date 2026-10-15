@@ -63,3 +63,7 @@ session.finish_decode(request_id, passed=True)
 이 프로젝트는 NIXL/Mooncake connector나 원격 노드 RDMA 구현이 아닙니다. Kubernetes 배포, 토큰 streaming, chat template, 자동 모델 컴파일, 일반 HTTP prompt 처리·동적 microbatching은 현재 검증 예제의 범위 밖입니다.
 
 Git 저장소는 로컬에 생성했습니다. 원격 저장소 생성·push·공개 배포는 하지 않았으며 배포 라이선스는 별도 결정이 필요합니다.
+
+## HTTP microbatch validation (v0.3.0)
+
+The experimental KONI server now batches concurrent llm-d requests across two ATOM B4 replicas. Three repeated HTTP trials delivered median 87.93 tok/s (32 output tokens) and 100.67 tok/s (128) for 16-request bursts. All 177 requests matched full same-B4 host-admitted logits. Mixed lengths and partial batches remain slower; this is not a universal latency or energy win. See [results and limitations](docs/HTTP_RESULTS_KO.md) and [run instructions](docs/HTTP_BATCHING.md).
