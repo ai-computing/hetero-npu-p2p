@@ -1,0 +1,354 @@
+{
+  "b4": {
+    "cases": {
+      "fixed32": {
+        "median_tps": 85.65611900985374,
+        "tps_repeats": [
+          86.37597092674227,
+          83.35216214437375,
+          85.65611900985374
+        ],
+        "median_response_seconds": 4.751957969987416,
+        "max_response_seconds": 6.132402654009638,
+        "useful_lane_fraction": 1.0
+      },
+      "fixed128": {
+        "median_tps": 100.51622840408788,
+        "tps_repeats": [
+          101.67985568600874,
+          100.51403189031778,
+          100.51622840408788
+        ],
+        "median_response_seconds": 15.406066085997736,
+        "max_response_seconds": 20.366542379997554,
+        "useful_lane_fraction": 1.0
+      },
+      "mixed32": {
+        "median_tps": 93.09905302031909,
+        "tps_repeats": [
+          100.27333582647259,
+          93.09905302031909,
+          85.23269112849736
+        ],
+        "median_response_seconds": 14.516498191500432,
+        "max_response_seconds": 30.02254326599359,
+        "useful_lane_fraction": 1.0
+      }
+    },
+    "diagnostics": [
+      {
+        "scenario": "smoke",
+        "seconds": 3.2264837919938145,
+        "tokens_per_second": 9.917917480138808
+      },
+      {
+        "scenario": "warm",
+        "seconds": 5.925257210998097,
+        "tokens_per_second": 86.40975096400155
+      },
+      {
+        "scenario": "partial",
+        "seconds": 2.681852235997212,
+        "tokens_per_second": 35.79615562387748
+      }
+    ],
+    "requests": 212,
+    "exact_logits": true,
+    "ownership_violations": 0,
+    "median_dma_ms": 3.0237695,
+    "device_binding": {
+      "physical": "/dev/rngd/npu3ch0",
+      "logical": "furiosa:2",
+      "paths": [
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3dmar",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3ch7r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch0r",
+        "/dev/rngd/npu3ch1r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch2r",
+        "/dev/rngd/npu3ch7r",
+        "/dev/rngd/npu3ch3r",
+        "/dev/rngd/npu3ch0r",
+        "/dev/rngd/npu3ch1r",
+        "/dev/rngd/npu3ch2r",
+        "/dev/rngd/npu3ch3r",
+        "/dev/rngd/npu3pe4-7",
+        "/dev/rngd/npu3pe0-3",
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3pe0-3",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch7r",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3pe4-7",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch7r"
+      ]
+    },
+    "config": {
+      "out": "/tmp/hetero-pd-b4-r1",
+      "model": "/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+      "atom_artifact": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-b4-build-r49/compiled/6463347b9a988e0e.rbln",
+      "tables": "/home/user/workspace/01_pd_disag/experiments/npu_pd_extended_20261014/pd_atom/tables.npz",
+      "workload": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/real_workload_20261015/workload.json",
+      "helper": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma",
+      "atom_python": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/devkit/torch-venv/bin/python",
+      "atom_devices": [
+        2,
+        3
+      ],
+      "rngd_device_path": "/dev/rngd/npu3ch0",
+      "output_lengths": [
+        32,
+        128
+      ],
+      "warmups": 1,
+      "repeats": 3,
+      "prefill_port": 18821,
+      "decode_port": 18822,
+      "batch_wait_ms": 100,
+      "admission_ttl_seconds": 60,
+      "batch_size": 4,
+      "lookahead": 16,
+      "rngd_logical_index": 2
+    },
+    "raw_root": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/results/pd-b4-r1",
+    "source_manifest": {
+      "head": "82b8fc332982753139cc7f13e711417a38d18928",
+      "dirty": true,
+      "sha256": {
+        "src/hetero_p2p/serving.py": "30dbf121bd8ab5d76eceb28a5c3b53dd66cb990213452c65e186de46c372084e",
+        "src/hetero_p2p/llmd.py": "9d1608f89e79cb50abf3b65d2164293a797278de941faa81974349f634023543",
+        "src/hetero_p2p/batching.py": "56dc5a781f25c372e586607234bbd0b1090a6501b37b43c0945a793ff074673f",
+        "src/hetero_p2p/length_queue.py": "da18b32a787b6f44fdf035685c551109a55739d07d0e76f70c61519516a04392",
+        "examples/koni/serve_length.py": "8d1004b33153667827746835a10776119f4909d89fbd093ec5ffaa74957fe5c1",
+        "examples/koni/serve_length_worker.py": "19879106e6d36a4d77339a74142a519f01ee624a13390871865717eaf109e8c5",
+        "examples/koni/validate_pd_scaling.py": "047072bc57302f60929218408d8cc9b9af1e6f8dd73f0244463250aef531d0ae"
+      }
+    }
+  },
+  "b8": {
+    "cases": {
+      "fixed32": {
+        "median_tps": 134.83127768383835,
+        "tps_repeats": [
+          134.83127768383835,
+          130.4058011376818,
+          135.86898154942244
+        ],
+        "median_response_seconds": 3.7735111489964765,
+        "max_response_seconds": 3.9199443529942073,
+        "useful_lane_fraction": 1.0
+      },
+      "fixed128": {
+        "median_tps": 176.49995522531333,
+        "tps_repeats": [
+          173.72523057142158,
+          176.49995522531333,
+          176.72418527878935
+        ],
+        "median_response_seconds": 11.587738747002732,
+        "max_response_seconds": 11.779512244000216,
+        "useful_lane_fraction": 1.0
+      },
+      "mixed32": {
+        "median_tps": 127.47136380677232,
+        "tps_repeats": [
+          127.47136380677232,
+          113.03495972820626,
+          132.0224481541408
+        ],
+        "median_response_seconds": 11.839588977003586,
+        "max_response_seconds": 22.637402268999722,
+        "useful_lane_fraction": 0.7692307692307693
+      }
+    },
+    "diagnostics": [
+      {
+        "scenario": "smoke",
+        "seconds": 3.3820035420067143,
+        "tokens_per_second": 9.461846979915572
+      },
+      {
+        "scenario": "warm",
+        "seconds": 3.895552760004648,
+        "tokens_per_second": 131.43192546553755
+      },
+      {
+        "scenario": "partial",
+        "seconds": 2.841780162008945,
+        "tokens_per_second": 33.78164197336593
+      }
+    ],
+    "requests": 212,
+    "exact_logits": true,
+    "ownership_violations": 0,
+    "median_dma_ms": 3.0422540000000002,
+    "device_binding": {
+      "physical": "/dev/rngd/npu3ch0",
+      "logical": "furiosa:2",
+      "paths": [
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3dmar",
+        "/dev/rngd/npu3ch7r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch0r",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3ch1r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch2r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch3r",
+        "/dev/rngd/npu3ch7r",
+        "/dev/rngd/npu3ch0r",
+        "/dev/rngd/npu3ch1r",
+        "/dev/rngd/npu3ch2r",
+        "/dev/rngd/npu3ch3r",
+        "/dev/rngd/npu3pe0-3",
+        "/dev/rngd/npu3pe4-7",
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3pe0-3",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch7r",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3pe4-7",
+        "/dev/rngd/npu3ch0",
+        "/dev/rngd/npu3ch1",
+        "/dev/rngd/npu3ch2",
+        "/dev/rngd/npu3ch3",
+        "/dev/rngd/npu3ch4",
+        "/dev/rngd/npu3ch5",
+        "/dev/rngd/npu3ch6",
+        "/dev/rngd/npu3ch7",
+        "/dev/rngd/npu3ch4r",
+        "/dev/rngd/npu3ch5r",
+        "/dev/rngd/npu3ch6r",
+        "/dev/rngd/npu3ch7r"
+      ]
+    },
+    "config": {
+      "out": "/tmp/hetero-pd-b8-r4",
+      "model": "/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+      "atom_artifact": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/length_optimization_20261016/b8/compiled/c244ef77d4e90da8.rbln",
+      "tables": "/home/user/workspace/01_pd_disag/experiments/npu_pd_extended_20261014/pd_atom/tables.npz",
+      "workload": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/real_workload_20261015/workload.json",
+      "helper": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma",
+      "atom_python": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/devkit/torch-venv/bin/python",
+      "atom_devices": [
+        2,
+        3
+      ],
+      "rngd_device_path": "/dev/rngd/npu3ch0",
+      "output_lengths": [
+        32,
+        128
+      ],
+      "warmups": 1,
+      "repeats": 3,
+      "prefill_port": 18821,
+      "decode_port": 18822,
+      "batch_wait_ms": 100,
+      "admission_ttl_seconds": 60,
+      "batch_size": 8,
+      "lookahead": 16,
+      "rngd_logical_index": 2
+    },
+    "raw_root": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/results/pd-b8-r4",
+    "source_manifest": {
+      "head": "82b8fc332982753139cc7f13e711417a38d18928",
+      "dirty": true,
+      "sha256": {
+        "src/hetero_p2p/serving.py": "30dbf121bd8ab5d76eceb28a5c3b53dd66cb990213452c65e186de46c372084e",
+        "src/hetero_p2p/llmd.py": "9d1608f89e79cb50abf3b65d2164293a797278de941faa81974349f634023543",
+        "src/hetero_p2p/batching.py": "56dc5a781f25c372e586607234bbd0b1090a6501b37b43c0945a793ff074673f",
+        "src/hetero_p2p/length_queue.py": "da18b32a787b6f44fdf035685c551109a55739d07d0e76f70c61519516a04392",
+        "examples/koni/serve_length.py": "8d1004b33153667827746835a10776119f4909d89fbd093ec5ffaa74957fe5c1",
+        "examples/koni/serve_length_worker.py": "19879106e6d36a4d77339a74142a519f01ee624a13390871865717eaf109e8c5",
+        "examples/koni/validate_pd_scaling.py": "047072bc57302f60929218408d8cc9b9af1e6f8dd73f0244463250aef531d0ae"
+      }
+    }
+  },
+  "speedup_b8_vs_b4": {
+    "fixed32": 1.5740997752691501,
+    "fixed128": 1.7559349174519492,
+    "mixed32": 1.369201508193122
+  },
+  "scope": {
+    "hardware": "same physical RNGD3 (SDK logical2) + ATOM2/3",
+    "lookahead": 16,
+    "partial_wait_ms": 100,
+    "collection_ms": 20,
+    "repeats": 3,
+    "comparison": "B4 PD vs B8 PD, same cards; not a new solo NPU comparison",
+    "power_measured": false,
+    "order": "B4 then B8 on a shared host; not randomized crossover",
+    "startup_failures": [
+      "pd-b8-r1-rejected",
+      "pd-b8-r2-busy"
+    ],
+    "initial_valid_b8_run": "pd-b8-r3-initial retained; unstable tail splitting, not mixed into final comparison"
+  }
+}

@@ -71,3 +71,7 @@ The experimental KONI server now batches concurrent llm-d requests across two AT
 ## Length-aware serving (v0.4.0, experimental)
 
 A separate source-staged server selects similar output limits before ATOM admission and can reply early while retaining the whole replica lease. In a controlled32-request mixed-length comparison, median throughput increased from65.84 to74.76 tok/s; all334 validation requests matched full host-admitted logits. Early reply alone gave the lowest median latency for32-token outputs. See [results and tradeoffs](docs/LENGTH_RESULTS_KO.md) and [reproduction](docs/LENGTH_SCHEDULING.md).
+
+## B8 PD and serving contracts (v0.5.0)
+
+The KONI HTTP example now supports compiled B4/B8 widths with a shared worker and validated compute-to-DMA device binding. On the same RNGD+two-ATOM hardware, B8 reached134.83/176.50/127.47 tok/s for fixed32, fixed128 and mixed-length bursts, versus B4's85.66/100.52/93.10. Final comparison424 requests matched full host-admitted logits. Small partial batches remain slower on B8. See [results](docs/PD_B8_RESULTS_KO.md), [library API and deployment scope](docs/SERVING_LIBRARY.md), and [example config](examples/koni/serve.config.example.json).

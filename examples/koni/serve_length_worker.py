@@ -9,6 +9,7 @@ result={'kind':'real_prompt_p2p_host_parity','batch':batch,'device':device,'inpu
 try:
  artifact=Path(cfg['atom_artifact'])
  engine=ExternalCacheDecoder(artifact,cfg['tables'])
+ if engine.batch_size!=batch:raise ValueError('artifact/config batch mismatch')
  engine.step_batch([128000]*batch,[0]*batch)
  import os,ctypes as C,hashlib
  state=json.loads((p/'live-capture.json').read_text());assert state['pid']==os.getpid()
@@ -19,7 +20,7 @@ try:
  (p/'capture-complete').write_text('disable breakpoints before benchmark')
  C.CDLL(None).getppid();assert (p/'breakpoints-disabled').exists()
  workload=json.loads(Path(cfg['workload']).read_text())
- prompts=[r['prompt_token_ids'] for r in workload['requests']];positions=[len(x)-1 for x in prompts]
+ prompts=[r['prompt_token_ids'] for r in workload['requests']]*(batch//4);positions=[len(x)-1 for x in prompts]
  with socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET) as conn:
   conn.connect(os.path.relpath(p.parent.parent/'bridge.sock'))
   fds=array.array('i',[r['fd'] for r in records])
@@ -32,17 +33,17 @@ try:
    if command['cmd']=='stop':break
    if command['cmd']=='decode_batch':
     assert reference is not None
-    jobs=command['requests'];assert 1<=len(jobs)<=4
+    jobs=command['requests'];assert 1<=len(jobs)<=batch
     assert len({j['slot'] for j in jobs})==len(jobs)==len({j['id'] for j in jobs})
     for j in jobs:
-     assert 0<=j['slot']<4 and 1<=j['output']<=128 and 2<=len(j['tokens']) and len(j['tokens'])+j['output']<=512
+     assert 0<=j['slot']<batch and 1<=j['output']<=128 and 2<=len(j['tokens']) and len(j['tokens'])+j['output']<=512
     engine.notify_cache_write(range(64))
     generated={j['id']:[] for j in jobs};checks={j['id']:True for j in jobs};diffs={j['id']:0.0 for j in jobs}
     lookup={tuple(prompt):reference[i] for i,prompt in enumerate(prompts)}
-    current=[128000]*4;start=time.perf_counter();first=None
+    current=[128000]*batch;start=time.perf_counter();first=None
     for j in jobs:current[j['slot']]=j['tokens'][-1]
     for step in range(max(j['output'] for j in jobs)):
-     pos=[0]*4
+     pos=[0]*batch
      for j in jobs:
       if step<j['output']:pos[j['slot']]=len(j['tokens'])-1+step
       else:current[j['slot']]=128000

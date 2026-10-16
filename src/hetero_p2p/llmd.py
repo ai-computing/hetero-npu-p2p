@@ -126,6 +126,8 @@ def serve_stage(broker,stage,port):
             except StageError as e:self.reply(e.status,{'error':str(e)})
             except (ValueError,TypeError):self.reply(400,{'error':'invalid JSON request'})
             except Exception:self.reply(500,{'error':'engine failure; cache quarantined'})
-    server=ThreadingHTTPServer(('127.0.0.1',port),Handler)
+    class StageHTTPServer(ThreadingHTTPServer):
+        request_queue_size=max(128,broker.capacity*2)
+    server=StageHTTPServer(('127.0.0.1',port),Handler)
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     return server,thread
