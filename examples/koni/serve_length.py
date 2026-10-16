@@ -19,7 +19,8 @@ if options.width not in (4,8):raise ValueError('KONI example supports B4/B8 arti
 ledger=CompletionLedger()
 if len(str(p/"bridge.sock").encode())>=108:raise ValueError("output socket path is too long")
 binding=RngdBinding.from_path(cfg.get('rngd_device_path','/dev/rngd/npu1ch0'),cfg.get('rngd_logical_index'))
-if cfg["atom_devices"]!=[2,3]:raise ValueError("this batch example validates ATOM2/3")
+devices=cfg["atom_devices"]
+if not isinstance(devices,list) or not devices or any(type(d) is not int or d not in (2,3) for d in devices) or len(set(devices))!=len(devices):raise ValueError("select a nonempty unique subset of authorized ATOM2/3")
 if f'npu{binding.index}:' in subprocess.check_output(['furiosa-smi','ps'],text=True):raise RuntimeError('selected RNGD is in use')
 (p/"config.json").write_text(json.dumps(cfg,indent=2));os.environ["HETERO_BATCH_CONFIG"]=str((p/"config.json").resolve())
 backend=RngdPdmaBackend(cfg["helper"],cfg.get("rngd_device_path","/dev/rngd/npu1ch0"));layout=TokenMajorLayout(64,8,512,128)
@@ -78,13 +79,13 @@ try:
   assert_atom_idle(p)
   phase=p/f'b{batch}';phase.mkdir();workers={};owners={};streams=[]
   with socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET) as server:
-   server.bind(os.path.relpath(p/'bridge.sock'));server.listen(2)
-   for device in [2,3]:
+   server.bind(os.path.relpath(p/'bridge.sock'));server.listen(len(devices))
+   for device in devices:
     d=phase/f'atom{device}';d.mkdir()
     g=(example/'capture.gdb').read_text()
     (d/'capture.gdb').write_text(g);log=(d/'worker.log').open('w');streams.append(log)
     workers[device]=subprocess.Popen(['gdb','-q','-batch','-x',str(d/'capture.gdb'),'--args',cfg['atom_python'],str(example/'serve_length_worker.py'),str(d),str(batch),str(device)],stdout=log,stderr=subprocess.STDOUT,env=dict(worker_environment(os.environ,device),HETERO_CAPTURE_DIR=str(d.resolve())))
-   for _ in range(2):
+   for _ in devices:
     conn,_=accept_worker(server,workers);data,anc,flags,_=conn.recvmsg(65536,socket.CMSG_SPACE(64*4));assert not flags&(socket.MSG_TRUNC|socket.MSG_CTRUNC)
     fds=array.array('i')
     for level,kind,content in anc:
@@ -113,7 +114,7 @@ try:
     (phase/'reference-parity.json').write_text(json.dumps(refs,indent=2));print('REFERENCES_READY',flush=True)
    from transformers import AutoTokenizer
    tokenizer=AutoTokenizer.from_pretrained(cfg['model'],local_files_only=True)
-   scheduler=ReplicaBatchScheduler([2,3],width=batch,max_wait_seconds=cfg.get('batch_wait_ms',10)/1000)
+   scheduler=ReplicaBatchScheduler(devices,width=batch,max_wait_seconds=cfg.get('batch_wait_ms',10)/1000)
    broker=StageBroker('koni-p2p',prepare,decode,lambda h:rpc('discard',h),capacity=cfg.get('queue_capacity',64),ttl=cfg.get('admission_ttl_seconds',10),event_sink=lambda row:event(row))
    servers=[serve_stage(broker,'prefill',cfg['prefill_port']),serve_stage(broker,'decode',cfg['decode_port'])]
    selector=selectors.DefaultSelector()
