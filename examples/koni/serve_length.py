@@ -172,7 +172,7 @@ try:
      control=p/'policy.json'
      if control.exists():
       candidate=json.loads(control.read_text())
-      if candidate.get('policy') not in ('fifo','length') or type(candidate.get('early_response')) is not bool:raise ValueError('invalid policy')
+      if candidate.get('policy') not in ('fifo','length','padding') or type(candidate.get('early_response')) is not bool:raise ValueError('invalid policy')
       if candidate!=policy:policy=candidate;event(dict(stage='policy',**policy))
       (p/'policy-ack.json').write_text(json.dumps(policy))
     if pending:
