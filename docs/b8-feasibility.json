@@ -1,0 +1,138 @@
+{
+  "b4": {
+    "median_tokens_per_second": 56.41876420949414,
+    "median_step_ms": 70.54177900135983,
+    "raw": {
+      "kind": "B4 host admission only",
+      "passed": true,
+      "rows": [
+        {
+          "repeat": 0,
+          "warmup": true,
+          "seconds": 9.16150451505382,
+          "tokens_per_second": 55.886017319393545,
+          "median_step_ms": 70.98683599906508,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 512,
+          "top1_total": 512,
+          "max_abs_diff": 0.0
+        },
+        {
+          "repeat": 1,
+          "warmup": false,
+          "seconds": 9.074994944923674,
+          "tokens_per_second": 56.41876420949414,
+          "median_step_ms": 70.90706149756443,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 512,
+          "top1_total": 512,
+          "max_abs_diff": 0.0
+        },
+        {
+          "repeat": 2,
+          "warmup": false,
+          "seconds": 9.032195332008996,
+          "tokens_per_second": 56.686107992542475,
+          "median_step_ms": 70.42683549661888,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 512,
+          "top1_total": 512,
+          "max_abs_diff": 0.0
+        },
+        {
+          "repeat": 3,
+          "warmup": false,
+          "seconds": 9.105556685011834,
+          "tokens_per_second": 56.22940120100242,
+          "median_step_ms": 70.54177900135983,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 512,
+          "top1_total": 512,
+          "max_abs_diff": 0.0
+        }
+      ],
+      "parity_passed": true,
+      "artifact": "experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-b4-build-r49/compiled/6463347b9a988e0e.rbln"
+    },
+    "measure_source_sha256": "d54b30b3af61ffc5474b528101aff4c7a934e775298606c45ab57af7ec337df9"
+  },
+  "b8": {
+    "median_tokens_per_second": 103.5416393569138,
+    "median_step_ms": 77.04116249078652,
+    "raw": {
+      "kind": "B8 host admission only",
+      "passed": true,
+      "rows": [
+        {
+          "repeat": 0,
+          "warmup": true,
+          "seconds": 9.901973839092534,
+          "tokens_per_second": 103.41372504513144,
+          "median_step_ms": 76.13030299398815,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 1024,
+          "top1_total": 1024,
+          "max_abs_diff": 0.0
+        },
+        {
+          "repeat": 1,
+          "warmup": false,
+          "seconds": 9.799018219069694,
+          "tokens_per_second": 104.50026493544138,
+          "median_step_ms": 76.44752300257096,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 1024,
+          "top1_total": 1024,
+          "max_abs_diff": 0.0
+        },
+        {
+          "repeat": 2,
+          "warmup": false,
+          "seconds": 9.91729550297896,
+          "tokens_per_second": 103.2539566550589,
+          "median_step_ms": 77.55235850345343,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 1024,
+          "top1_total": 1024,
+          "max_abs_diff": 0.0
+        },
+        {
+          "repeat": 3,
+          "warmup": false,
+          "seconds": 9.889741039063665,
+          "tokens_per_second": 103.5416393569138,
+          "median_step_ms": 77.04116249078652,
+          "finite": true,
+          "exact_to_B4": true,
+          "top1_matches": 1024,
+          "top1_total": 1024,
+          "max_abs_diff": 0.0
+        }
+      ],
+      "parity_passed": true,
+      "artifact": "experiments/native_pd_2026_4/length_optimization_20261016/b8/compiled/c244ef77d4e90da8.rbln"
+    },
+    "measure_source_sha256": "53b601ec2e1e043b3463120f972d48802a1a4fb06c6d89e911df9d97be4702e3"
+  },
+  "speedup": 1.8352340893615289,
+  "scope": "Same ATOM2, host-admitted KONI KV, decode-only 128 steps; B4 four prompts, B8 same prompts duplicated; one warmup and three measured repeats each. Not PD HTTP, DMA, or power validation.",
+  "build_status": {
+    "build_harness_passed": false,
+    "artifact_saved": true,
+    "reason": "Compile-only sentinel triggered SDK CPU fallback; original failure preserved in result.json/build.log",
+    "runtime_validation_passed": true,
+    "full_logit_parity_to_B4": true,
+    "dma_tested": false,
+    "http_tested": false,
+    "observed_memory": "14.7GiB / 15.7GiB from rbln-smi during repeat2",
+    "device": 2
+  },
+  "raw_root": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/length_optimization_20261016"
+}
