@@ -38,6 +38,13 @@ from hetero_p2p.adapters.rngd_dlfloat import BoundedPrefixPacker
 import furiosa.torch as ft
 from furiosa.torch._C.tensor import copy_from_tensor
 from furiosa.torch._C.ir import FlatDramShape
+# Persist process-local SDK topology before device acquisition. Enumeration
+# does not prove availability; actual allocation and channel verification follow.
+fusion,mesh,available=ft.get_device_configuration()
+(p/'sdk-device-config.json').write_text(json.dumps(dict(
+ fusion={key:getattr(fusion,key) for key in ('num_fusion','num_pe_per_cluster','num_chips','num_clusters_per_chip')},
+ mesh=str(mesh),available=list(available),selected=binding.torch_device,
+ physical=binding.device_path),indent=2))
 # Acquire the actual compute device before exporting ATOM memory. SMI alone
 # can omit container-owned contexts. Keep this probe alive for the run.
 try:
