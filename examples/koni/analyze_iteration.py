@@ -46,6 +46,9 @@ for case in (['fixed128'] if a.saturation else ['fixed32','fixed128','mixed32'])
  summary['cases'][case]={}
  for policy in (['sealed'] if a.saturation else ['sealed','refill']):
   prefix=f'{policy}-{case}-r';rows=[r for r in http['rows'] if r['scenario'].startswith(prefix)];assert len(rows)==3
+  if a.saturation:
+   assert {r['scenario'] for r in rows}=={f'{prefix}{i}' for i in range(3)}
+   assert all(len(r['requests'])==request_count and all(q['output_tokens']==128 for q in r['requests']) for r in rows)
   groups=[e for e in starts if all(j['id'].startswith(prefix) for j in e['requests'])]
   assert all(e['policy']['refill']==(policy=='refill') for e in groups)
   req=[q for r in rows for q in r['requests']];v=[r['tokens_per_second'] for r in rows]
