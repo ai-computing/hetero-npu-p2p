@@ -18,6 +18,8 @@ if a.policy_comparison:
   assert runs[0][0].get(key)==runs[1][0].get(key),f'policy comparison changes {key}'
 else:
  assert runs[0][0].get('queue_policy','length')==runs[1][0].get('queue_policy','length'),'queue policy differs; use explicit policy comparison with matching graph'
+power_modes=[{r.get('power_sampled',False) for r in http['rows']} for _,http,_ in runs]
+assert len(power_modes[0])==len(power_modes[1])==1 and power_modes[0]==power_modes[1],'power sampler instrumentation differs'
 warm_outputs=[]
 for cfg,http,audit in runs:
  warm=[r for r in http['rows'] if r['scenario']=='warm'];assert len(warm)==1
