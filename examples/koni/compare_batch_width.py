@@ -17,13 +17,14 @@ warm_outputs=[]
 for cfg,http,audit in runs:
  warm=[r for r in http['rows'] if r['scenario']=='warm'];assert len(warm)==1
  warm_outputs.append(sorted(q['output_tokens'] for q in warm[0]['requests']))
-assert warm_outputs[0]==warm_outputs[1],'warmup workloads differ'
+assert warm_outputs[0]==warm_outputs[1] and len(warm_outputs[0])==n,'warmup workloads differ or request budget mismatches'
 rows=[]
 for policy in (('sealed',) if a.saturation else ('sealed','refill')):
  for case in (('fixed128',) if a.saturation else ('mixed',) if a.mixed_only else ('fixed32','fixed128','mixed32')):
   samples=[]
   for cfg,http,audit in runs:
    selected=[r for r in http['rows'] if r['scenario'].startswith(f'{policy}-{case}-r')]
+   assert {r['scenario'] for r in selected}=={f'{policy}-{case}-r{i}' for i in range(3)}
    assert len(selected)==3 and all(len(r['requests'])==n for r in selected)
    wanted=[32]*n if case=='fixed32' else [128]*n if case=='fixed128' else [32,64,96,128]*(n//4)
    assert all(sorted(q['output_tokens'] for q in r['requests'])==sorted(wanted) for r in selected)

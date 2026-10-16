@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import json,time,traceback,subprocess,os,socket,array,hashlib,selectors
 from batch_control import assert_atom_idle, worker_environment, accept_worker
+from source_manifest import capture_sources
 import argparse
 from hetero_p2p import SourceAllocation, DestinationAllocation, RngdPdmaBackend
 from hetero_p2p.layout import TokenMajorLayout
@@ -13,6 +14,7 @@ from hetero_p2p.serving import BatchOptions,CompletionLedger,RngdBinding,validat
 from hetero_p2p.llmd import StageBroker,StageError,serve_stage
 import queue,concurrent.futures,threading
 ap=argparse.ArgumentParser();ap.add_argument("--config",type=Path,required=True);args=ap.parse_args();cfg=json.loads(args.config.read_text());p=Path(cfg["out"]).resolve();p.mkdir(parents=True,exist_ok=False)
+capture_sources(p)
 example=Path(__file__).resolve().parent
 options=BatchOptions(cfg.get('batch_size',4),cfg.get('lookahead',2*cfg.get('batch_size',4)),cfg.get('collection_ms',20)/1000)
 validate_koni_batch(options.width,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False),cfg.get('experimental_batch14',False))
