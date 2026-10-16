@@ -19,4 +19,11 @@ class LengthQueueTests(unittest.TestCase):
   q=LengthQueue();q.add('a',32,0)
   with self.assertRaises(ValueError):q.add('a',64,1)
   with self.assertRaises(ValueError):q.take(1,policy='invalid')
-if __name__=='__main__':unittest.main()
+ def test_fill_existing_partial_without_waiting_for_new_batch(self):
+  q=LengthQueue(width=8,lookahead=16);q.add('tail',128,1)
+  self.assertEqual(q.take(1.001,limit=1)[0].request_id,'tail')
+ def test_partial_collection_uses_latest_arrival(self):
+  q=LengthQueue();q.add('old',32,0);q.add('new',32,1)
+  self.assertEqual(q.take(1.001),[])
+  self.assertEqual(len(q.take(1.1)),2)
+if __name__=='__main__' :unittest.main()

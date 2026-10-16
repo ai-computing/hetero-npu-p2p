@@ -1,0 +1,29 @@
+{
+  "out": "/tmp/hetero-koni-b8-new-run",
+  "model": "/path/to/0172bf7e73977ae213613529f3d2d5400a33f678",
+  "atom_artifact": "/path/to/c244ef77d4e90da8.rbln",
+  "tables": "/path/to/tables.npz",
+  "workload": "/path/to/workload.json",
+  "helper": "/path/to/rngd-pdma",
+  "atom_python": "/path/to/python",
+  "atom_devices": [
+    2,
+    3
+  ],
+  "rngd_device_path": "/dev/rngd/npu3ch0",
+  "output_lengths": [
+    32,
+    128
+  ],
+  "warmups": 1,
+  "repeats": 3,
+  "batch_size": 8,
+  "lookahead": 16,
+  "collection_ms": 20,
+  "batch_wait_ms": 100,
+  "prefill_port": 18821,
+  "decode_port": 18822,
+  "queue_capacity": 64,
+  "admission_ttl_seconds": 60,
+  "rngd_logical_index": 2
+}
