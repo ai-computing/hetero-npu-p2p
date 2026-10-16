@@ -1,7 +1,9 @@
 """Counterbalanced iteration slot-refill ablation with hardware overlap probe."""
 import argparse,concurrent.futures,json,time,urllib.request,subprocess
 from pathlib import Path
-ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True);ap.add_argument('--requests',type=int,default=16,choices=(16,32,48,84));ap.add_argument('--saturation',action='store_true');ap.add_argument('--warm-output',type=int,choices=(32,128),default=32);ap.add_argument('--device-snapshots',action='store_true');a=ap.parse_args();cfg=json.loads(a.config.read_text());out=Path(cfg['out']);prompts=[r['prompt_token_ids'] for r in json.loads(Path(cfg['workload']).read_text())['requests']]
+ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True);ap.add_argument('--requests',type=int,default=16,choices=(16,32,48,84));ap.add_argument('--saturation',action='store_true');ap.add_argument('--mixed-only',action='store_true');ap.add_argument('--warm-output',type=int,choices=(32,128),default=32);ap.add_argument('--device-snapshots',action='store_true');a=ap.parse_args();cfg=json.loads(a.config.read_text());out=Path(cfg['out']);prompts=[r['prompt_token_ids'] for r in json.loads(Path(cfg['workload']).read_text())['requests']]
+if a.saturation and a.mixed_only:raise ValueError('choose saturation or mixed-only')
+if not (a.saturation or a.mixed_only) and a.requests not in (16,32):raise ValueError('legacy design requires16 or32 requests')
 if a.requests==84 and cfg.get('queue_capacity',64)<84:raise ValueError('84-request design requires explicit queue_capacity>=84')
 def request(i,count,tag):
  rid=f'{tag}-{i}';body=dict(model='koni-p2p',prompt=prompts[i%4],max_tokens=count,temperature=0,stream=False)
@@ -31,7 +33,7 @@ try:
  for rep in range(0 if a.saturation else 3):
   policies=['sealed','refill'] if rep%2==0 else ['refill','sealed']
   for policy in policies:
-   for case,counts in [('fixed32',[32]*a.requests),('fixed128',[128]*a.requests),('mixed32',[32,64,96,128]*8)]:
+   for case,counts in ([('mixed',[32,64,96,128]*(a.requests//4))] if a.mixed_only else [('fixed32',[32]*a.requests),('fixed128',[128]*a.requests),('mixed32',[32,64,96,128]*8)]):
     scenarios.append((policy,f'{policy}-{case}-r{rep}',counts))
  for policy,tag,counts in scenarios:
   switch_policy(policy)
