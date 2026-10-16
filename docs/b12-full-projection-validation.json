@@ -1,0 +1,95 @@
+{
+  "kind": "decode-only candidate; strict parity failed",
+  "median_tps": 144.15138260966668,
+  "repeats": [
+    145.36167297573004,
+    143.56929762014593,
+    144.15138260966668
+  ],
+  "baseline_tps": 138.39397635322146,
+  "ratio": 1.0416015668322922,
+  "strict_reference_parity": false,
+  "raw": "experiments/native_pd_2026_4/b12_full_projection_20261016/eager-measure-r1",
+  "pd_validated": true,
+  "quality_pending": false,
+  "fp32_own_history": {
+    "scope": "HF FP32 eager CPU on backend own history; four prompts, not task accuracy/non-inferiority",
+    "batch": 12,
+    "origin": {
+      "kind": "decode-only numerical diagnosis",
+      "artifact": "experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
+      "strict_reference_parity": false,
+      "transport_validated": false
+    },
+    "model": "/home/gspark/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+    "run": "experiments/native_pd_2026_4/b12_full_projection_20261016/eager-measure-r1",
+    "rows": [
+      {
+        "lane": 0,
+        "count": 128,
+        "top1_match": 128,
+        "max_logit_regret": 0.0,
+        "mean_logit_regret": 0.0,
+        "mean_logit_abs_error": 0.02675308659672737
+      },
+      {
+        "lane": 1,
+        "count": 128,
+        "top1_match": 127,
+        "max_logit_regret": 0.03691673278808594,
+        "mean_logit_regret": 0.0002884119749069214,
+        "mean_logit_abs_error": 0.018977414816617966
+      },
+      {
+        "lane": 2,
+        "count": 128,
+        "top1_match": 128,
+        "max_logit_regret": 0.0,
+        "mean_logit_regret": 0.0,
+        "mean_logit_abs_error": 0.018405303359031677
+      },
+      {
+        "lane": 3,
+        "count": 128,
+        "top1_match": 127,
+        "max_logit_regret": 0.020021438598632812,
+        "mean_logit_regret": 0.00015641748905181885,
+        "mean_logit_abs_error": 0.020596131682395935
+      }
+    ],
+    "top1_match": 510,
+    "count": 512
+  },
+  "pd_comparison": {
+    "scope": "HTTP 48-request scenario throughput; sequential shared host; same-batch transport parity, not application quality or MFU",
+    "baseline": "hetero-npu-p2p/results/pd-b12-sat48-r1",
+    "candidate": "hetero-npu-p2p/results/pd-b12-full-sat48-r1",
+    "rows": [
+      {
+        "policy": "sealed",
+        "case": "fixed128",
+        "baseline": {
+          "batch": 12,
+          "median": 127.24885122680948,
+          "repeats": [
+            127.24885122680948,
+            127.07716990222026,
+            127.44670863670483
+          ]
+        },
+        "candidate": {
+          "batch": 12,
+          "median": 126.83331984428723,
+          "repeats": [
+            119.72714305461335,
+            126.83331984428723,
+            132.64534079144647
+          ]
+        },
+        "ratio": 0.9967344979658669
+      }
+    ]
+  },
+  "pd_requests": 224,
+  "default_adopted": false
+}

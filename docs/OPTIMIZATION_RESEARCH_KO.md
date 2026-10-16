@@ -81,3 +81,9 @@
 ## 2026-10-16: 배치 확대와 KV 메모리 제약
 
 [PagedAttention, SOSP2023](https://arxiv.org/abs/2309.06180)은 KV 단편화·중복을 줄여 더 큰 배치를 수용하는 방향이다. 현재 관측한 B16 eager 실패는 논리 float32 캐시의 사전 할당 비용이며, 이를 단순히 단편화 문제로 단정하지 않는다. 현재 고정512 block/slot graph에서 논문의 동적 page pool을 쓰려면 graph block table, runtime 메모리 계약, P2P 목적지 레이아웃을 함께 바꾸고 재검증해야 한다. op 이름이 paged attention이라고 해서 그 메모리 관리가 구현된 것은 아니다. 우선 B12로 같은 context의 가능한 배치 폭을 실측하고, 이후 논리/물리 캐시 저장량과 export 계약을 분리 계측한다. 논문의 GPU 처리량 배율을 NPU 개선 예상치로 사용하지 않는다.
+
+## 2026-10-16: 다음 graph 비교 시험
+
+B12 eager host wall 계측에서 runtime 호출83.849ms/전체85.987ms였다. Kernel profiler는 아니지만 입력·출력 Python 처리만으로 큰 개선을 얻을 근거는 약하다. 현재 P2P graph는 attention 출력 투영을8개 group 부분 곱과 순차 합산으로 계산한다. ResidentDecode에 full_output_projection 옵션이 있다. 과거 optimization_round2는 resident B24/host KV 경로에서 full projection을 사용했으나 현재 external-KV B12의 동일조건 비교는 확인되지 않았다.
+
+compile_b16.py에 HETERO_FULL_OUTPUT_PROJECTION=1 명시 옵션과 결과 기록을 추가했다. 기본값0은 유지한다. 현재48요청 비교를 마친 뒤 별도 artifact로 컴파일하고, 같은배치 전송 정합성 및 독립 FP32 수치를 검증할 예정이다. 반올림 순서가 달라지므로 기존artifact의 bitwise 일치만으로 품질을 판단하지 않는다. 새 옵션의 컴파일·성능 시험은 아직 수행하지 않았다.

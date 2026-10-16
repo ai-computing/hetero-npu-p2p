@@ -1,0 +1,30 @@
+{
+  "scope": "HTTP 48-request scenario throughput; sequential shared host; same-batch transport parity, not application quality or MFU",
+  "baseline": "hetero-npu-p2p/results/pd-b12-sat48-r1",
+  "candidate": "hetero-npu-p2p/results/pd-b12-full-sat48-r1",
+  "rows": [
+    {
+      "policy": "sealed",
+      "case": "fixed128",
+      "baseline": {
+        "batch": 12,
+        "median": 127.24885122680948,
+        "repeats": [
+          127.24885122680948,
+          127.07716990222026,
+          127.44670863670483
+        ]
+      },
+      "candidate": {
+        "batch": 12,
+        "median": 126.83331984428723,
+        "repeats": [
+          119.72714305461335,
+          126.83331984428723,
+          132.64534079144647
+        ]
+      },
+      "ratio": 0.9967344979658669
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 """Compare completed, replay-validated runs with equal request/card budgets."""
 import argparse,json,statistics
 from pathlib import Path
-ap=argparse.ArgumentParser();ap.add_argument('baseline',type=Path);ap.add_argument('candidate',type=Path);ap.add_argument('--output',type=Path,required=True);a=ap.parse_args()
+ap=argparse.ArgumentParser();ap.add_argument('baseline',type=Path);ap.add_argument('candidate',type=Path);ap.add_argument('--output',type=Path,required=True);ap.add_argument('--saturation',action='store_true');a=ap.parse_args();n=48 if a.saturation else 32
 runs=[]
 for directory in (a.baseline,a.candidate):
  cfg=json.loads((directory/'config.json').read_text())
@@ -12,16 +12,21 @@ for directory in (a.baseline,a.candidate):
  runs.append((cfg,http,audit))
 for key in ('model','tables','workload','atom_devices','rngd_device_path','rngd_logical_index','lookahead','collection_ms','batch_wait_ms'):
  assert runs[0][0].get(key)==runs[1][0].get(key),f'confounded configuration: {key}'
+warm_outputs=[]
+for cfg,http,audit in runs:
+ warm=[r for r in http['rows'] if r['scenario']=='warm'];assert len(warm)==1
+ warm_outputs.append(sorted(q['output_tokens'] for q in warm[0]['requests']))
+assert warm_outputs[0]==warm_outputs[1],'warmup workloads differ'
 rows=[]
-for policy in ('sealed','refill'):
- for case in ('fixed32','fixed128','mixed32'):
+for policy in (('sealed',) if a.saturation else ('sealed','refill')):
+ for case in (('fixed128',) if a.saturation else ('fixed32','fixed128','mixed32')):
   samples=[]
   for cfg,http,audit in runs:
    selected=[r for r in http['rows'] if r['scenario'].startswith(f'{policy}-{case}-r')]
-   assert len(selected)==3 and all(len(r['requests'])==32 for r in selected)
-   wanted=[32]*32 if case=='fixed32' else [128]*32 if case=='fixed128' else [32,64,96,128]*8
+   assert len(selected)==3 and all(len(r['requests'])==n for r in selected)
+   wanted=[32]*n if case=='fixed32' else [128]*n if case=='fixed128' else [32,64,96,128]*8
    assert all(sorted(q['output_tokens'] for q in r['requests'])==sorted(wanted) for r in selected)
    values=[r['tokens_per_second'] for r in selected]
    samples.append(dict(batch=cfg['batch_size'],median=statistics.median(values),repeats=values))
   rows.append(dict(policy=policy,case=case,baseline=samples[0],candidate=samples[1],ratio=samples[1]['median']/samples[0]['median']))
-a.output.write_text(json.dumps(dict(scope='HTTP 32-request scenario throughput; sequential shared host; same-batch transport parity, not application quality or MFU',baseline=str(a.baseline),candidate=str(a.candidate),rows=rows),indent=2))
+a.output.write_text(json.dumps(dict(scope=f'HTTP {n}-request scenario throughput; sequential shared host; same-batch transport parity, not application quality or MFU',baseline=str(a.baseline),candidate=str(a.candidate),rows=rows),indent=2))
