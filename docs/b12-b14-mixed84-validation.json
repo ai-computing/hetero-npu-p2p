@@ -1,0 +1,71 @@
+{
+  "scope": "HTTP 84-request scenario throughput; sequential shared host; same-batch transport parity, not application quality or MFU",
+  "baseline": "hetero-npu-p2p/results/pd-b12-mixed84-r1",
+  "candidate": "hetero-npu-p2p/results/pd-b14-mixed84-r1",
+  "rows": [
+    {
+      "policy": "sealed",
+      "case": "mixed",
+      "baseline": {
+        "queue_policy": "length",
+        "batch": 12,
+        "context": 512,
+        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
+        "median": 115.10338351297052,
+        "repeats": [
+          115.10338351297052,
+          105.19526994767392,
+          115.34038220741087
+        ]
+      },
+      "candidate": {
+        "queue_policy": "length",
+        "batch": 14,
+        "context": 448,
+        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
+        "median": 124.83791223121077,
+        "repeats": [
+          125.46384963529508,
+          124.83791223121077,
+          119.56312279292062
+        ]
+      },
+      "ratio": 1.0845720466344353
+    },
+    {
+      "policy": "refill",
+      "case": "mixed",
+      "baseline": {
+        "queue_policy": "length",
+        "batch": 12,
+        "context": 512,
+        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
+        "median": 115.25841403515231,
+        "repeats": [
+          125.09647843677158,
+          115.25841403515231,
+          114.97806337244074
+        ]
+      },
+      "candidate": {
+        "queue_policy": "length",
+        "batch": 14,
+        "context": 448,
+        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
+        "median": 139.04372526447,
+        "repeats": [
+          139.04372526447,
+          138.85169680870314,
+          139.10531493457427
+        ]
+      },
+      "ratio": 1.206365074762034
+    }
+  ],
+  "limitations": [
+    "B12 source manifest captured after measurement; B14 captured at startup.",
+    "Batch and context change together. One process per configuration, shared host, no counterbalanced batch order yet.",
+    "Four prompt/output length pairs correlated; not a representative request trace.",
+    "No continuous power or client streaming token-interval p99 measured."
+  ]
+}

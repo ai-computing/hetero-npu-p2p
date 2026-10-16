@@ -52,7 +52,7 @@ for case in (['fixed128'] if a.saturation else ['mixed'] if a.mixed_only else ['
    expected_lengths=([128]*request_count if a.saturation else [32,64,96,128]*(request_count//4))
    assert all(len(r['requests'])==request_count and sorted(q['output_tokens'] for q in r['requests'])==sorted(expected_lengths) for r in rows)
   groups=[e for e in starts if all(j['id'].startswith(prefix) for j in e['requests'])]
-  assert all(e['policy']['refill']==(policy=='refill') for e in groups)
+  assert groups and all(e['policy']['refill']==(policy=='refill') and e['policy']['policy']==cfg.get('queue_policy','length') for e in groups)
   req=[q for r in rows for q in r['requests']];v=[r['tokens_per_second'] for r in rows]
   summary['cases'][case][policy]=dict(median_tps=statistics.median(v),tps_repeats=v,median_response_seconds=statistics.median(q['end']-q['start'] for q in req),response_by_output={str(n):statistics.median(q['end']-q['start'] for q in req if q['output_tokens']==n) for n in sorted({q['output_tokens'] for q in req})},useful_lane_fraction=sum(e['steps']*len(e['requests']) for e in groups)/sum(e['steps']*e['compiled_batch'] for e in groups),iteration_count=len(groups),device_seconds=sum(completions[e['generation']]['seconds'] for e in groups),producer_window_seconds=sum(completions[e['generation']]['time']-e['time'] for e in groups))
   engine_tpot=[1000*(done[q['id']]['end']-done[q['id']]['first'])/(q['output_tokens']-1) for q in req if q['output_tokens']>1]

@@ -2,6 +2,7 @@
 import argparse,concurrent.futures,json,time,urllib.request,subprocess
 from pathlib import Path
 ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True);ap.add_argument('--requests',type=int,default=16,choices=(16,32,48,84));ap.add_argument('--saturation',action='store_true');ap.add_argument('--mixed-only',action='store_true');ap.add_argument('--warm-output',type=int,choices=(32,128),default=32);ap.add_argument('--device-snapshots',action='store_true');a=ap.parse_args();cfg=json.loads(a.config.read_text());out=Path(cfg['out']);prompts=[r['prompt_token_ids'] for r in json.loads(Path(cfg['workload']).read_text())['requests']]
+if cfg.get('queue_policy','length') not in ('length','padding'):raise ValueError('unsupported queue policy')
 if a.saturation and a.mixed_only:raise ValueError('choose saturation or mixed-only')
 if not (a.saturation or a.mixed_only) and a.requests not in (16,32):raise ValueError('legacy design requires16 or32 requests')
 if a.requests==84 and cfg.get('queue_capacity',64)<84:raise ValueError('84-request design requires explicit queue_capacity>=84')
@@ -13,7 +14,7 @@ def request(i,count,tag):
  assert len(r['choices'][0]['token_ids'])==count
  return dict(id=rid,start=start,end=time.perf_counter(),output_tokens=count,response=r)
 def switch_policy(name):
- desired=dict(policy='fifo' if name=='probe' else 'length',refill=name!='sealed',quantum=16 if name=='probe' else 128)
+ desired=dict(policy='fifo' if name=='probe' else cfg.get('queue_policy','length'),refill=name!='sealed',quantum=16 if name=='probe' else 128)
  ack=out/'policy-ack.json'
  ack.unlink(missing_ok=True)
  temp=out/'policy.tmp';temp.write_text(json.dumps(desired));temp.replace(out/'policy.json')
