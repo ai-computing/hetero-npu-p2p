@@ -200,6 +200,37 @@ For changes to hardware adapters, also verify actual allocation/export behavior,
 | `tests/` | CPU contract tests and native validation utilities |
 | `docs/` | API guidance, experiment reports, and support boundaries |
 
+## ai-rm
+
+**계층/역할**: `l2-memory` 라이브러리. ai-rm(AI 반도체 통합 자원관리)에서 NPU↔NPU KV cache 전송을 맡는다.
+현재 백엔드는 같은 호스트의 Furiosa RNGD에서 Rebellions ATOM 소유 DMA-BUF로 PDMA 쓰기를 하고, 모든 완료(CQE)를
+확인한 뒤에만 decode를 허용한다. 구성 요약은 [`ai-rm.yaml`](ai-rm.yaml).
+
+**k8s + llm-d 연동**: 아직 없다. `src/hetero_p2p/llmd.py`는 llm-d 공식 `pd-sidecar`(shared-storage)의
+prefill/decode stage 계약을 구현하고, `examples/koni/`에서 로컬 프로세스로 검증했다([llm-d 연결](docs/LLMD.md)).
+k8s 배포에 필요한 것:
+- prefill/decode를 다른 Pod로 나눌 때 단일 cache owner로의 인증된 RPC와 Unix FD(DMA-BUF) 전달 경로
+- 컨테이너 이미지와 매니페스트(RNGD·ATOM 디바이스, 네이티브 helper `build/rngd-pdma` 포함)
+- EPP/Envoy 경로, 다중 노드, 장애 복구 검증
+
+**설치/테스트** (테스트는 NPU 불필요):
+
+```bash
+python -m pip install -e .
+python -m unittest discover -s tests
+```
+
+하드웨어 전송에는 `native/build.py`로 helper를 빌드하고 `hetero-p2p doctor --device <rngd-device>`로 환경을 확인한다.
+
+**인터페이스**: provides `KVTransport`(`TransferPlan`/`CopySession`/`RngdPdmaBackend`, llm-d stage broker).
+다른 ai-rm 구성요소를 사용하지 않는다. KONI 예제는 모델 실행에 `rngd-pd`의 `rngd_pd` 패키지를 `PYTHONPATH`로 불러온다.
+
+**지원 KPI**: 이종자원수(RNGD+ATOM 동시 사용), 전력효율(`hetero_p2p.energy`의 HTTP 구간 보드 에너지 적분).
+보드 전력만 포함하므로 wall-plug 효율이나 MFU를 산출하지 않는다.
+
+**`cluster.local.env` 변수**: 없다. 엔드포인트·IP를 코드에 두지 않으며, 모델·SDK·아티팩트 경로는
+`examples/koni/*.example.json`을 복사한 설정 파일로 전달한다.
+
 ## License
 
 A project license has not yet been declared in a `LICENSE` file. Public repository access does not by itself grant an open-source license. Vendor SDKs, driver components, and model artifacts remain subject to their respective terms.
