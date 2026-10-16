@@ -1,0 +1,20 @@
+name: hetero-npu-p2p
+layer: l2-memory
+kind: library
+summary: 같은 호스트의 RNGD→ATOM NPU 간 완료 확인형 KV cache P2P 전송 라이브러리
+maturity: experimental
+hardware: [RNGD, ATOM]
+install:
+  - python -m pip install -e .
+test:
+  - python -m unittest discover -s tests
+deploy:
+  target: none                # 라이브러리. llm-d 연결은 로컬 stage 예제(examples/koni)뿐
+  manifests: null
+  image: null
+config:
+  env_example: null           # 사이트 값은 examples/koni/*.example.json 설정 파일로 받는다
+interfaces:
+  provides: [KVTransport]
+  uses: []
+kpi: [이종자원수, 전력효율]
