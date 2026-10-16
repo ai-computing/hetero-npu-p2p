@@ -60,7 +60,7 @@ session.finish_decode(request_id, passed=True)
 
 [llm-d 연동 문서](docs/LLMD.md), [지원 범위](docs/SUPPORT.md), [검증 기록](docs/VALIDATION.md)을 참고하세요. 이 구현은 llm-d를 KV 복사 경로로 사용하지 않습니다. llm-d shared-storage 계약으로 prefill→decode를 호출하고, 같은 노드의 owner 프로세스가 DMA와 cache lease를 관리합니다.
 
-이 프로젝트는 NIXL/Mooncake connector나 원격 노드 RDMA 구현이 아닙니다. Kubernetes 배포, 토큰 streaming, chat template, 자동 모델 컴파일, 일반 HTTP prompt 처리·동적 microbatching은 현재 검증 예제의 범위 밖입니다.
+이 프로젝트는 NIXL/Mooncake connector나 원격 노드 RDMA 구현이 아닙니다. Kubernetes 배포, 토큰 streaming, chat template, 자동 모델 컴파일, 일반 모델의 production serving은 현재 검증 예제의 범위 밖입니다.
 
 Git 저장소는 로컬에 생성했습니다. 원격 저장소 생성·push·공개 배포는 하지 않았으며 배포 라이선스는 별도 결정이 필요합니다.
 
@@ -75,3 +75,7 @@ A separate source-staged server selects similar output limits before ATOM admiss
 ## B8 PD and serving contracts (v0.5.0)
 
 The KONI HTTP example now supports compiled B4/B8 widths with a shared worker and validated compute-to-DMA device binding. On the same RNGD+two-ATOM hardware, B8 reached134.83/176.50/127.47 tok/s for fixed32, fixed128 and mixed-length bursts, versus B4's85.66/100.52/93.10. Final comparison424 requests matched full host-admitted logits. Small partial batches remain slower on B8. See [results](docs/PD_B8_RESULTS_KO.md), [library API and deployment scope](docs/SERVING_LIBRARY.md), and [example config](examples/koni/serve.config.example.json).
+
+## Fenced iteration refill (experimental)
+
+A separate one-ATOM KONI server can replace completed slots after synchronized decode quanta while preserving ongoing trajectories. In 410 fully validated requests, mixed-burst median throughput rose from73.49 to79.50 tok/s and overall median response time fell from20.52 to16.74 seconds; 128-token requests became slower and uniform-length throughput did not improve. This remains an opt-in experiment. See [implementation, evidence and limitations](docs/ITERATION_SERVING_KO.md) and [research log](docs/OPTIMIZATION_RESEARCH_KO.md).

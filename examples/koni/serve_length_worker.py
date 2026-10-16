@@ -25,12 +25,21 @@ try:
   conn.connect(os.path.relpath(p.parent.parent/'bridge.sock'))
   fds=array.array('i',[r['fd'] for r in records])
   conn.sendmsg([json.dumps({'device':device,'batch':batch,'mappings':mappings,'blocks':records}).encode()],[(socket.SOL_SOCKET,socket.SCM_RIGHTS,fds)])
-  count=0;reference=None
+  count=0;reference=None;iteration_decoder=None
   while True:
    message=conn.recv(65536)
    if not message:raise RuntimeError('Producer disconnected before stop')
    command=json.loads(message)
    if command['cmd']=='stop':break
+   if command['cmd']=='decode_iteration':
+    assert reference is not None
+    if iteration_decoder is None:
+     from hetero_p2p.iteration_worker import IterationDecoder
+     iteration_decoder=IterationDecoder(engine,torch.rbln.synchronize,{tuple(prompt):reference[i] for i,prompt in enumerate(prompts)})
+    reply=iteration_decoder.run(command)
+    with (p/'iteration-rows.jsonl').open('a') as f:f.write(json.dumps(reply)+'\n')
+    conn.send(json.dumps(reply).encode());count+=1
+    continue
    if command['cmd']=='decode_batch':
     assert reference is not None
     jobs=command['requests'];assert 1<=len(jobs)<=batch
