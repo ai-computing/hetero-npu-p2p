@@ -36,3 +36,19 @@ class IterationWorkerTests(unittest.TestCase):
   e,d,s=self.setup_decoder();self.add(s,'a',2);self.run_quantum(d,s,1)
   with self.assertRaises(ValueError):d.run(dict(generation=1,steps=1,requests=[]))
   self.assertTrue(d.poisoned)
+
+class ReplicaIsolationTests(unittest.TestCase):
+ setup_decoder=IterationWorkerTests.setup_decoder
+ add=IterationWorkerTests.add
+ run_quantum=IterationWorkerTests.run_quantum
+ def test_two_replicas_keep_independent_completion_fences(self):
+  e0,d0,s0=self.setup_decoder();e1,d1,s1=self.setup_decoder()
+  self.add(s0,'left',8);left=s0.begin(4)
+  self.add(s1,'right',1);reply,done=self.run_quantum(d1,s1,4)
+  self.assertEqual(done[0].request_id,'right')
+  replacement=self.add(s1,'replacement',2)
+  with self.assertRaises(RuntimeError):s0.reserve('unsafe',1,object())
+  self.assertIs(s0.active,left);self.assertEqual(replacement.slot,0)
+  reply=d0.run(dict(generation=left.generation,steps=left.steps,requests=[dict(slot=0,id='left',tokens=[1,2],output=8,produced=0,admitted=True)]))
+  self.assertEqual(s0.accept_reply(left,reply),[])
+  self.assertIsNone(s0.active);self.assertEqual(s0.slots[0].produced,4)

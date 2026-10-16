@@ -49,6 +49,16 @@ class IterationScheduler:
         if row is None or row.admitted:raise ValueError('matching new admission required')
         row.admitted=True
 
+    def should_dispatch(self, now, initial_since, max_wait_seconds):
+        """Collect a new partial cohort, but never delay a continuing trajectory."""
+        import math
+        self._fenced()
+        if not all(isinstance(x,(int,float)) and not isinstance(x,bool) and math.isfinite(x) for x in (now,initial_since,max_wait_seconds)) or max_wait_seconds<0:
+            raise ValueError('finite times and nonnegative collection wait required')
+        if not self.slots or any(not r.admitted for r in self.slots.values()):return False
+        return (len(self.slots)==self.width or any(r.produced>0 for r in self.slots.values())
+                or now-initial_since>=max_wait_seconds)
+
     def begin(self, quantum=1):
         self._fenced()
         if type(quantum) is not int or quantum<1:raise ValueError('positive quantum required')

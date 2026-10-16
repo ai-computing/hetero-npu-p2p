@@ -21,7 +21,6 @@ if len(str(p/"bridge.sock").encode())>=108:raise ValueError("output socket path 
 binding=RngdBinding.from_path(cfg.get('rngd_device_path','/dev/rngd/npu1ch0'),cfg.get('rngd_logical_index'))
 devices=cfg["atom_devices"]
 if not isinstance(devices,list) or not devices or any(type(d) is not int or d not in (2,3) for d in devices) or len(set(devices))!=len(devices):raise ValueError("select a nonempty unique subset of authorized ATOM2/3")
-if len(devices)!=1:raise ValueError('initial iteration validation uses one ATOM replica')
 if f'npu{binding.index}:' in subprocess.check_output(['furiosa-smi','ps'],text=True):raise RuntimeError('selected RNGD is in use')
 (p/"config.json").write_text(json.dumps(cfg,indent=2));os.environ["HETERO_BATCH_CONFIG"]=str((p/"config.json").resolve())
 backend=RngdPdmaBackend(cfg["helper"],cfg.get("rngd_device_path","/dev/rngd/npu1ch0"));layout=TokenMajorLayout(64,8,512,128)
@@ -51,7 +50,7 @@ class KVOnly(FullPrefillEngine):
  def _build_lmhead(self,cache_dir):pass
  def _next_token(self,x,P):return None
 result={'kind':'PD_HTTP_batch','passed':False};wave_rows=[]
-commands=queue.Queue();rpc_lock=threading.Lock();accepting=True;servers=[];decode_futures={};pending=[];live_batches={};sessions={};tokenizer=None;staged={};waiting=LengthQueue(options.width,options.lookahead,options.collection_seconds);policy={'policy':'length','refill':True,'quantum':128,'partial_quantum':4}
+commands=queue.Queue();rpc_lock=threading.Lock();accepting=True;servers=[];decode_futures={};pending=[];live_batches={};sessions={};tokenizer=None;staged={};waiting=LengthQueue(options.width,options.lookahead,options.collection_seconds);policy={'policy':'length','refill':len(devices)==1,'quantum':128,'partial_quantum':4}
 def event(row):
  with (p/'events.jsonl').open('a') as f:f.write(json.dumps(dict({'time':time.perf_counter()},**row))+'\n')
 def rpc(kind,*args):
@@ -115,12 +114,13 @@ try:
     (phase/'reference-parity.json').write_text(json.dumps(refs,indent=2));print('REFERENCES_READY',flush=True)
    from transformers import AutoTokenizer
    tokenizer=AutoTokenizer.from_pretrained(cfg['model'],local_files_only=True)
-   device=devices[0];owner=owners[device];scheduler=IterationScheduler(batch)
+   schedulers={device:IterationScheduler(batch) for device in devices};initial_since={}
    broker=StageBroker('koni-p2p',prepare,decode,lambda h:rpc('discard',h),capacity=cfg.get('queue_capacity',64),ttl=cfg.get('admission_ttl_seconds',60),event_sink=lambda row:event(row))
    servers=[serve_stage(broker,'prefill',cfg['prefill_port']),serve_stage(broker,'decode',cfg['decode_port'])]
-   selector=selectors.DefaultSelector();selector.register(owner['conn'],selectors.EVENT_READ)
+   selector=selectors.DefaultSelector()
+   for device,owner in owners.items():selector.register(owner['conn'],selectors.EVENT_READ,device)
    def stage_source(rid,tokens):
-    if rid in staged or any(r.request_id==rid for r in scheduler.slots.values()):raise StageError(409,'request buffers still leased')
+    if rid in staged or any(r.request_id==rid for scheduler in schedulers.values() for r in scheduler.slots.values()):raise StageError(409,'request buffers still leased')
     started=time.perf_counter()
     kp,vp,_=engine.prefill_device(tokens[:-1]);sync(binding.compute_index)
     payload,maximum=packer.encode(kp,vp,len(tokens)-1);sync(binding.compute_index)
@@ -129,7 +129,8 @@ try:
     allocation=SourceAllocation(source.data_ptr(),64*8*padded*128*2,(source,payload),'dlfloat16-token-major-v1',device=binding.device_path)
     staged[rid]=(tuple(tokens),allocation,padded)
     event(dict(stage='source_ready',request_id=rid,bytes=allocation.size,seconds=time.perf_counter()-started))
-   def admit(entry):
+   def admit(entry,device):
+    scheduler=schedulers[device];owner=owners[device]
     assert scheduler.active is None
     tokens,allocation,padded=staged[entry.request_id]
     destinations=tuple(DestinationAllocation(fd,owner['conn'],'dlfloat16-token-major-v1') for fd in owner['fds'])
@@ -138,7 +139,7 @@ try:
     started=time.perf_counter();receipt=session.admit(entry.request_id,plan,lambda:None);scheduler.mark_admitted(entry.request_id)
     session.start_decode(entry.request_id);del staged[entry.request_id]
     event(dict(stage='p2p_complete',request_id=entry.request_id,replica=device,slot=entry.slot,admission_seconds=time.perf_counter()-started,**receipt))
-   def respond(row,entry):
+   def respond(row,entry,device):
     rid=entry.request_id;future=decode_futures.pop(rid)
     response={'id':rid,'object':'text_completion','model':'koni-p2p','choices':[{'index':0,'text':tokenizer.decode(row['tokens'],skip_special_tokens=True),'token_ids':row['tokens'],'finish_reason':'length'}],'usage':{'prompt_tokens':len(entry.owner),'completion_tokens':len(row['tokens']),'total_tokens':len(entry.owner)+len(row['tokens'])}}
     future.set_result(response);event(dict(stage='response_sent',request_id=rid,replica=device))
@@ -146,6 +147,7 @@ try:
    print('HTTP_READY',flush=True)
    while True:
     for key,_ in selector.select(timeout=0):
+     device=key.data;owner=owners[device];scheduler=schedulers[device]
      message=owner['conn'].recv(65536)
      if not message:raise RuntimeError('decode owner disconnected')
      reply=json.loads(message);ticket=scheduler.active
@@ -154,7 +156,7 @@ try:
      rows={r['request_id']:r for r in reply['requests']}
      for entry in finished:
       sessions.pop(entry.request_id).finish_decode(entry.request_id,True)
-      respond(rows[entry.request_id],entry)
+      respond(rows[entry.request_id],entry,device)
     for _ in range(64):
      try:kind,args,future=commands.get_nowait()
      except queue.Empty:break
@@ -168,7 +170,7 @@ try:
        rid=args[0];del staged[rid];future.set_result(None)
       else:raise RuntimeError('unknown owner command')
      except Exception as error:future.set_exception(error)
-    if not pending and not staged and not scheduler.slots and not waiting.jobs:
+    if not pending and not staged and not any(s.slots for s in schedulers.values()) and not waiting.jobs:
      control=p/'policy.json'
      if control.exists():
       candidate=json.loads(control.read_text())
@@ -177,25 +179,29 @@ try:
       if candidate!=policy:policy=candidate;event(dict(stage='policy',**policy))
       (p/'policy-ack.json').write_text(json.dumps(policy))
     # Prepare sources during decode, but prioritize resuming a fenced active set.
-    if pending and (scheduler.active is not None or not scheduler.slots):
+    if pending and not any(s.active is None and any(r.produced>0 for r in s.slots.values()) for s in schedulers.values()):
      args,future=pending.pop(0);rid,tokens=args
      try:stage_source(rid,tokens);future.set_result(rid)
      except StageError as error:future.set_exception(error)
      except BaseException as error:future.set_exception(error);raise
-    if scheduler.active is None:
-     free=batch-len(scheduler.slots)
-     if free and (policy['refill'] or not scheduler.slots):
-      selected=waiting.take(time.monotonic(),more_prefills=bool(pending),policy=policy['policy'],limit=free)
-      for job in selected:
-       entry=scheduler.reserve(job.request_id,job.output_tokens,staged[job.request_id][0]);assert entry is not None
-       admit(entry)
-     if scheduler.slots:
-      quantum=QuantumPolicy(policy['quantum'],policy.get('partial_quantum',policy['quantum'])).choose(len(scheduler.slots),batch)
-      ticket=scheduler.begin(quantum)
-      jobs=[dict(slot=slot,id=rid,tokens=list(scheduler.slots[slot].owner),output=scheduler.slots[slot].output_tokens,produced=scheduler.slots[slot].produced,admitted=True) for slot,rid in ticket.requests]
-      owner['conn'].send(json.dumps(dict(cmd='decode_iteration',generation=ticket.generation,steps=ticket.steps,requests=jobs)).encode())
-      event(dict(stage='iteration_start',replica=device,generation=ticket.generation,steps=ticket.steps,requests=jobs,compiled_batch=batch,policy=dict(policy)))
-    if (p/'stop').exists() and scheduler.active is None and not scheduler.slots and not pending and not staged and not waiting.jobs:break
+    for device,scheduler in schedulers.items():
+     owner=owners[device]
+     if scheduler.active is None:
+      free=batch-len(scheduler.slots)
+      if free and (policy['refill'] or not scheduler.slots or all(r.produced==0 for r in scheduler.slots.values())):
+       selected=waiting.take(time.monotonic(),more_prefills=bool(pending),policy=policy['policy'],limit=free)
+       for job in selected:
+        if not scheduler.slots:initial_since[device]=time.monotonic()
+        entry=scheduler.reserve(job.request_id,job.output_tokens,staged[job.request_id][0]);assert entry is not None
+        admit(entry,device)
+      if scheduler.slots:
+       if not scheduler.should_dispatch(time.monotonic(),initial_since[device],cfg.get('batch_wait_ms',100)/1000):continue
+       quantum=QuantumPolicy(policy['quantum'],policy.get('partial_quantum',policy['quantum'])).choose(len(scheduler.slots),batch)
+       ticket=scheduler.begin(quantum)
+       jobs=[dict(slot=slot,id=rid,tokens=list(scheduler.slots[slot].owner),output=scheduler.slots[slot].output_tokens,produced=scheduler.slots[slot].produced,admitted=True) for slot,rid in ticket.requests]
+       owner['conn'].send(json.dumps(dict(cmd='decode_iteration',generation=ticket.generation,steps=ticket.steps,requests=jobs)).encode())
+       event(dict(stage='iteration_start',replica=device,generation=ticket.generation,steps=ticket.steps,requests=jobs,compiled_batch=batch,policy=dict(policy)))
+    if (p/'stop').exists() and not any(s.slots or s.active is not None for s in schedulers.values()) and not pending and not staged and not waiting.jobs:break
     time.sleep(.001)
    selector.close();result.update(passed=True)
 except Exception as error:

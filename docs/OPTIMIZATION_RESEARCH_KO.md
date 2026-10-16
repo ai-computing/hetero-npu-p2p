@@ -68,3 +68,12 @@
 ## 후속: 시간차 도착에서 adaptive quantum
 
 [304요청 비교](ADAPTIVE_QUANTUM_KO.md)에서 빈 슬롯일 때4step, 꽉 찼을 때128step을 실행하는 정책을 검증했다. fixed128 대비 시간차 도착 처리량+44.0%, 짧은 요청 응답시간−55.5%, 포화 처리량 유지. 긴 요청은+0.65초였다. fixed4도 유사한 이득이며 적응형의 고유 이점은 full batch 제어 왕복 감소다. 실험 iteration 서버의 초기 정책으로 채택했으나 일반적 우위를 주장하지 않는다. 다음은 두 ATOM 확장, 다양한 도착률·출력 분포, 실제 token-interval 지연과 전력 측정이다.
+
+
+## 추가 논문 검토: 다중 replica 부하
+
+[Llumnix, OSDI 2024](https://www.usenix.org/conference/osdi24/presentation/sun-biao)는 실행 중 요청과 상태의 migration을 통해 instance 간 부하 및 지연 요구를 조절한다. 현재 검증한 DMA는 RNGD→ATOM admission이고 ATOM→ATOM live migration은 구현하지 않았다. 우선 초기 배치 충전과 카드별 token work/잔여 길이에 따른 admission 배치부터 검증할 후보로 삼는다. 요청 수만으로 부하를 판정하지 않으며 논문의 성능 배율을 NPU에 전용하지 않는다.
+
+## 후속: 두 ATOM 확장과 성능 저하 보존
+
+[두 replica 검증](ITERATION_REPLICAS_KO.md)을 완료했다. 독립적인 generation/lease로848요청의 전체 logits를 확인했다. 초기 부분 batch8+6+2 문제를 고쳐 고정 길이16요청을8+8로 채웠고, 최종 sealed는136.35/177.73 tok/s였다. 혼합은 sealed147.01, refill117.31 tok/s로 refill이 손해여서 두 장 기본값은 sealed로 두었다. 한 장의 정책 이득을 두 장에 일반화하지 않는다. 초기 실패·성능 저하·최종 반복을 모두 보존했다. 다음은 카드 배치와 더 큰 batch feasibility, token-interval/전력 평가다.

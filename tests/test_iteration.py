@@ -45,3 +45,15 @@ class QuantumPolicyTests(unittest.TestCase):
    with self.assertRaises(ValueError):QuantumPolicy(*args)
   for used,width in [(0,8),(9,8),(1,0),(True,8)]:
    with self.assertRaises(ValueError):QuantumPolicy().choose(used,width)
+
+class InitialCollectionTests(unittest.TestCase):
+ def test_new_partial_waits_but_full_cohort_starts(self):
+  s=IterationScheduler(2);s.reserve('a',4,object());s.mark_admitted('a')
+  self.assertFalse(s.should_dispatch(.05,0,.1));self.assertTrue(s.should_dispatch(.101,0,.1))
+  s.reserve('b',4,object());self.assertFalse(s.should_dispatch(.05,0,.1))
+  s.mark_admitted('b');self.assertTrue(s.should_dispatch(.05,0,.1))
+ def test_continuation_has_no_new_batch_collection_delay(self):
+  s=IterationScheduler(2);s.reserve('a',4,object());s.mark_admitted('a');t=s.begin(1)
+  with self.assertRaises(RuntimeError):s.should_dispatch(0,0,.1)
+  s.complete(t,device_completed=True,passed=True);self.assertTrue(s.should_dispatch(0,0,.1))
+  with self.assertRaises(ValueError):s.should_dispatch(0,0,float('nan'))

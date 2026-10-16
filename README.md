@@ -83,3 +83,7 @@ A separate one-ATOM KONI server can replace completed slots after synchronized d
 ## Adaptive iteration quantum (experimental)
 
 The separate iteration server now defaults to 4 steps with empty slots and 128 with a full batch. In a controlled delayed-arrival test, median scenario throughput increased39.51→56.89 tok/s and short-request latency fell10.71→4.77 seconds, with a0.65-second cost to the initial long request. Saturated throughput stayed near94 tok/s. All304 requests passed full-logit and lease checks. See [conditions and limitations](docs/ADAPTIVE_QUANTUM_KO.md).
+
+## Independent iteration replicas (experimental)
+
+The iteration example supports ATOM2/3 independently, with collection of new partial batches before dispatch. In the final two-ATOM comparison, sealed batches reached136.35/177.73 tok/s for fixed32/fixed128. Mixed throughput was147.01 sealed versus117.31 with refill, so two-ATOM startup defaults to sealed; refill remains an explicit option. Single-ATOM startup keeps adaptive refill. All848 requests across exploratory and final runs matched full logits. See [results, retained failures and limitations](docs/ITERATION_REPLICAS_KO.md).
