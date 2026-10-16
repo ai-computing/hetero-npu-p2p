@@ -1,20 +1,21 @@
-"""Host-admitted B8/B16 decoder feasibility, never exports/imports DMA buffers."""
+"""Host-admitted external-KV decoder feasibility, never exports/imports DMA buffers."""
 import argparse,json,time,traceback
 from pathlib import Path
 import numpy as np
 import torch,torch_rbln
 from hetero_p2p.adapters.atom_koni_external import ExternalCacheDecoder
-ap=argparse.ArgumentParser();ap.add_argument('--artifact',required=True);ap.add_argument('--reference-root',required=True);ap.add_argument('--reference-batch',type=int,choices=[8,12,16],default=8);ap.add_argument('--profile',action='store_true');ap.add_argument('--save-logits',action='store_true');ap.add_argument('--batch',type=int,choices=[8,12,16],required=True);ap.add_argument('--out',type=Path,required=True);a=ap.parse_args();N=a.batch;p=a.out.resolve();p.mkdir(parents=True,exist_ok=False);root=Path(a.reference_root);result={'kind':'host admission only','batch':N,'passed':False}
+ap=argparse.ArgumentParser();ap.add_argument('--artifact',required=True);ap.add_argument('--reference-root',required=True);ap.add_argument('--reference-batch',type=int,choices=[8,12,14,16],default=8);ap.add_argument('--profile',action='store_true');ap.add_argument('--save-logits',action='store_true');ap.add_argument('--batch',type=int,choices=[8,12,14,16],required=True);ap.add_argument('--context',type=int,choices=[448,512],default=512);ap.add_argument('--out',type=Path,required=True);a=ap.parse_args();N=a.batch;p=a.out.resolve();p.mkdir(parents=True,exist_ok=False);root=Path(a.reference_root);result={'kind':'host admission only','batch':N,'context':a.context,'passed':False}
 import os,subprocess
 if os.environ.get('RBLN_DEVICES')!='2':raise RuntimeError('authorized physical ATOM2 required')
 from batch_control import assert_atom_idle
 assert_atom_idle(p)
 try:
- torch.set_num_threads(8);e=ExternalCacheDecoder(a.artifact,'experiments/npu_pd_extended_20261014/pd_atom/tables.npz',experimental_batch16=N==16,experimental_batch12=N==12,profile_steps=a.profile);assert e.batch_size==N
- workload=json.loads(Path('experiments/native_pd_2026_4/real_workload_20261015/workload.json').read_text());prompts=[r['prompt_token_ids'] for r in workload['requests']]*(N//4)
+ torch.set_num_threads(8);e=ExternalCacheDecoder(a.artifact,'experiments/npu_pd_extended_20261014/pd_atom/tables.npz',experimental_batch16=N==16,experimental_batch12=N==12,experimental_batch14=N==14,profile_steps=a.profile,context=a.context);assert e.batch_size==N
+ workload=json.loads(Path('experiments/native_pd_2026_4/real_workload_20261015/workload.json').read_text());base_prompts=[r['prompt_token_ids'] for r in workload['requests']];assert len(base_prompts)==4;prompts=[base_prompts[j%4] for j in range(N)]
+ if any(len(x)+128>a.context for x in prompts):raise ValueError('workload exceeds selected context')
  host=[]
  for i in range(4):
-  with np.load(root/f'b{a.reference_batch}/host-kv-{i}.npz') as z:host.append(np.stack((z['keys'].transpose(0,1,3,2),z['values']),axis=1).reshape(64,8,512,128))
+  with np.load(root/f'b{a.reference_batch}/host-kv-{i}.npz') as z:host.append(np.stack((z['keys'].transpose(0,1,3,2),z['values']),axis=1).reshape(64,8,512,128)[:,:,:a.context,:].copy())
  ref=np.load(root/f'b{a.reference_batch}/atom2/host-reference.npz')['logits'];expected=ref[np.arange(N)%ref.shape[0]];rows=[]
  for repeat in range(4):
   for i,cache in enumerate(e.caches):cache.copy_(torch.from_numpy(np.stack([host[j%4][i] for j in range(N)])))

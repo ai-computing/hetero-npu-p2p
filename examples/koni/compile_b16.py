@@ -3,7 +3,9 @@ import json,time,traceback,os
 if os.environ.get("RBLN_DEVICES")!="2":raise RuntimeError("This feasibility run requires authorized physical ATOM2")
 class CompileOnlyDone(BaseException):pass
 N=int(os.environ.get('HETERO_COMPILE_BATCH','16'))
-if N not in (8,12,16):raise ValueError('feasibility compiler supports B8/B12/B16')
+if N not in (8,12,14,16):raise ValueError('feasibility compiler supports B8/B12/B14/B16')
+S=int(os.environ.get('HETERO_COMPILE_CONTEXT','512'))
+if S not in (400,416,448,512):raise ValueError('feasibility context must be400,416,448 or512')
 projection=os.environ.get('HETERO_FULL_OUTPUT_PROJECTION','0')
 if projection not in ('0','1'):raise ValueError('HETERO_FULL_OUTPUT_PROJECTION must be0 or1')
 from pathlib import Path
@@ -16,7 +18,7 @@ p=Path(os.environ['HETERO_BUILD_DIR']).resolve();p.mkdir(parents=True,exist_ok=F
 from batch_control import assert_atom_idle
 assert_atom_idle(p)
 modeldir=Path('/home/gspark/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678')
-result={'kind':'koni_external_full_decoder','layers':32,'batch':N,'full_output_projection':projection=='1','revision':modeldir.name}
+result={'kind':'koni_external_full_decoder','layers':32,'batch':N,'context':S,'full_output_projection':projection=='1','revision':modeldir.name}
 start=time.time()
 try:
  torch.set_num_threads(8)
@@ -28,11 +30,11 @@ try:
    for key in f.keys():
     if key.startswith('model.layers.') or key in ['model.norm.weight','lm_head.weight']:
      sd[key]=f.get_tensor(key).float().numpy()
- model=ResidentDecode(cfg,sd,512,32,N,wdt=torch.bfloat16).eval();model.full_output_projection=projection=='1';del sd
+ model=ResidentDecode(cfg,sd,S,32,N,wdt=torch.bfloat16).eval();model.full_output_projection=projection=='1';del sd
  model=model.to('rbln:0')
  print('WEIGHTS_READY',flush=True)
  def move(x):return x.to('rbln:0')
- caches=[move(torch.zeros(N,8,512,128)) for _ in range(64)]
+ caches=[move(torch.zeros(N,8,S,128)) for _ in range(64)]
  original_create=rebel.RBLNCompiledModel.create_runtime
  def stop_after_save(self,*args,**kwargs):
   if list((p/'compiled').glob('*.rbln')):raise CompileOnlyDone('COMPILE_ONLY_ARTIFACT_SAVED')
@@ -46,7 +48,7 @@ try:
  with torch.no_grad():
   for pos,tok in [(0,128000),(1,9906)]:
    angles=pos*inv
-   mask=torch.zeros(N,512);mask[:,:pos+1]=1
+   mask=torch.zeros(N,S);mask[:,:pos+1]=1
    args=[move(torch.from_numpy(np.repeat(embeddings[tok:tok+1],N,axis=0))),move(torch.from_numpy(np.repeat(np.cos(angles).astype(np.float32)[None,:],N,axis=0))),move(torch.from_numpy(np.repeat(np.sin(angles).astype(np.float32)[None,:],N,axis=0))),move(mask),move(torch.full((N,1),pos,dtype=torch.int32)),move(torch.arange(N,dtype=torch.int16).reshape(N,1)),*caches]
    t=time.perf_counter();out=run(*args);cpu=out.cpu().float()
    saved_logits.append(cpu.numpy())

@@ -14,9 +14,12 @@ from collections import deque
 
 
 class ExternalCacheDecoder:
-    def __init__(self, artifact, tables, device=0, *, experimental_batch16=False, experimental_batch12=False, profile_steps=False):
-        if any(type(flag) is not bool for flag in (experimental_batch12, experimental_batch16, profile_steps)):
+    def __init__(self, artifact, tables, device=0, *, experimental_batch16=False, experimental_batch12=False, experimental_batch14=False, profile_steps=False, context=512):
+        if any(type(flag) is not bool for flag in (experimental_batch12, experimental_batch14, experimental_batch16, profile_steps)):
             raise ValueError('Experimental and profiling flags must be boolean')
+        if type(context) is not int or context not in (400,416,448,512):
+            raise ValueError('explicit experimental context must be400,416,448 or512')
+        self.context = context
         self.profile_steps = profile_steps
         self.step_profile = deque(maxlen=1024)
         import torch
@@ -37,13 +40,13 @@ class ExternalCacheDecoder:
         self.batch_size = int(profiles[0].shape[0])
         if type(experimental_batch12) is not bool or type(experimental_batch16) is not bool:
             raise ValueError('Experimental batch opt-ins must be boolean')
-        allowed = (1, 2, 4, 8) + ((12,) if experimental_batch12 else ()) + ((16,) if experimental_batch16 else ())
+        allowed = (1, 2, 4, 8) + ((12,) if experimental_batch12 else ()) + ((14,) if experimental_batch14 else ()) + ((16,) if experimental_batch16 else ())
         if self.batch_size not in allowed:
             raise ValueError('Unsupported compiled batch size')
         batch = self.batch_size
-        cache_shape = (batch, 8, 512, 128)
+        cache_shape = (batch, 8, self.context, 128)
         expected = [((batch, 4096), torch.float32), ((batch, 64), torch.float32),
-                    ((batch, 64), torch.float32), ((batch, 512), torch.float32),
+                    ((batch, 64), torch.float32), ((batch, self.context), torch.float32),
                     (cache_shape, torch.float32), (cache_shape, torch.float32),
                     ((batch, 1), torch.int32), ((batch, 1), torch.int16)]
         expected += [(cache_shape, torch.float32)] * 62
@@ -85,11 +88,11 @@ class ExternalCacheDecoder:
                 token_ids.dtype.kind not in 'iu' or positions.dtype.kind not in 'iu'):
             raise ValueError('Expected one integer token and position per batch slot')
         if (np.any(token_ids < 0) or np.any(token_ids >= len(self.embed)) or
-                np.any(positions < 0) or np.any(positions >= 512)):
+                np.any(positions < 0) or np.any(positions >= self.context)):
             raise ValueError('token or cache position out of range')
         torch = self.torch
         angle = positions.astype(np.float32)[:, None] * self.inv[None, :]
-        mask = (np.arange(512)[None, :] <= positions[:, None]).astype(np.float32)
+        mask = (np.arange(self.context)[None, :] <= positions[:, None]).astype(np.float32)
         host = [self.embed[token_ids],
                 np.cos(angle).astype(np.float32), np.sin(angle).astype(np.float32), mask,
                 positions.astype(np.int32)[:, None],
