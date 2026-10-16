@@ -67,3 +67,7 @@ Git 저장소는 로컬에 생성했습니다. 원격 저장소 생성·push·�
 ## HTTP microbatch validation (v0.3.0)
 
 The experimental KONI server now batches concurrent llm-d requests across two ATOM B4 replicas. Three repeated HTTP trials delivered median 87.93 tok/s (32 output tokens) and 100.67 tok/s (128) for 16-request bursts. All 177 requests matched full same-B4 host-admitted logits. Mixed lengths and partial batches remain slower; this is not a universal latency or energy win. See [results and limitations](docs/HTTP_RESULTS_KO.md) and [run instructions](docs/HTTP_BATCHING.md).
+
+## Length-aware serving (v0.4.0, experimental)
+
+A separate source-staged server selects similar output limits before ATOM admission and can reply early while retaining the whole replica lease. In a controlled32-request mixed-length comparison, median throughput increased from65.84 to74.76 tok/s; all334 validation requests matched full host-admitted logits. Early reply alone gave the lowest median latency for32-token outputs. See [results and tradeoffs](docs/LENGTH_RESULTS_KO.md) and [reproduction](docs/LENGTH_SCHEDULING.md).
