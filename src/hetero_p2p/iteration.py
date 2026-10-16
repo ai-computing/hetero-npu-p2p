@@ -15,6 +15,7 @@ class IterationRequest:
     owner: object
     produced: int = 0
     admitted: bool = False
+    tokens: tuple[int, ...] = ()
 
 @dataclass(frozen=True)
 class IterationTicket:
@@ -75,3 +76,22 @@ class IterationScheduler:
         for row in finished:del self.slots[row.slot]
         self.active=None
         return finished
+
+    def accept_reply(self, ticket, reply):
+        """Validate the worker protocol before allowing any slot mutation."""
+        try:
+            if self.active is not ticket or reply.get('kind')!='iteration_complete' or reply.get('generation')!=ticket.generation or reply.get('steps')!=ticket.steps:raise RuntimeError('iteration identity mismatch')
+            rows=reply['requests']
+            if len(rows)!=len(ticket.requests) or {(r['slot'],r['request_id']) for r in rows}!=set(ticket.requests):raise RuntimeError('iteration request set mismatch')
+            for row in rows:
+                entry=self.slots[row['slot']];expected=entry.produced+ticket.steps
+                if row.get('passed') is not True or row.get('reference_checked') is not True or row.get('max_abs_diff')!=0:raise RuntimeError('iteration validation failed')
+                if row.get('produced')!=expected or len(row['tokens'])!=expected or row.get('complete') is not (expected==entry.output_tokens):raise RuntimeError('iteration progress mismatch')
+                if tuple(row['tokens'][:entry.produced])!=entry.tokens:raise RuntimeError('previous output changed')
+            finished=self.complete(ticket,device_completed=reply.get('device_completed'),passed=reply.get('passed'))
+            for row in rows:
+                if row['slot'] in self.slots:self.slots[row['slot']].tokens=tuple(row['tokens'])
+            return finished
+        except BaseException:
+            self.poisoned=True
+            raise
