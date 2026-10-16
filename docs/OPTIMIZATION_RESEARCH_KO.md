@@ -93,3 +93,9 @@ compile_b16.py에 HETERO_FULL_OUTPUT_PROJECTION=1 명시 옵션과 결과 기록
 [KIVI, ICML 2024](https://arxiv.org/abs/2402.02750)는 key를 channel 방향, value를 token 방향으로 양자화하는 비대칭 KV 압축을 제안한다. 현재 경로에 적용하려면 압축된 KV를 attention이 직접 소비하거나 작은 단위로 복원해야 한다. 전체 KV를 매 step 복원한 채 별도 원본까지 유지하면 이 환경의 eager 할당 문제를 해결하지 못할 수 있다. 이는 현재 코드의 메모리 수명에 근거한 적용 판단이다.
 
 현재 선택은 먼저 B14/context448의 정밀도를 유지한 경로를 검증하는 것이다. KIVI는 아직 구현하지 않았으며 GPU 논문의 처리량 배수를 ATOM 예상치로 사용하지 않는다. 후속 도입에는 compiler의 저정밀 attention/복원 지원, P2P 물리 레이아웃 계약, 실제 peak memory와 품질 검증이 필요하다. 공식 RBLN0.11.0 검색에서 이 custom graph의 INT4 지원을 확증하지 못했으므로 지원 여부는 미확인이다. 검색 부재를 기능 부재로 간주하지 않는다.
+
+## 혼합84요청의 후속 후보 선택
+
+B12/full/context512 혼합84요청에서는 sealed/refill 중앙값115.103/115.258tok/s로 거의 같고, 출력32 응답은24.532→33.284초로 악화했다. 완료620요청은exact지만 시작소스기록이 누락되어 사후기록임을 명시했다. Worker step 시간85.806–87.347ms에 비해 총step은576–704로 달라졌다.
+
+`simulate_mixed_queue.py`는 관측한 요청 순서만 보존하고 모든 요청을 처음부터 준비된 상태로 둔 진단 도구다. B12의6개 순서에서 lookahead32/length/sealed는640–704step, padding/sealed는모두608step이었다. 이 결과는 prefill/DMA/HTTP 대기와 실제 도착시간을 무시하므로 처리량 예측이나 개선 실측이 아니다. TurboTransformers의 비용 기반 배치 원리에서 착안해 앞서 구현한 padding 정책을 더 큰 배치에서도 검증할 이유이며, 논문 알고리즘 재현은 아니다. 다음 후보는 lookahead를 고정한 length/padding 비교이고, 대기열 확대는 별도 실험으로 분리한다. 세부기록은 workspace `experiments/2026-10-16-b12-b14-mixed84.md`에 있다.
