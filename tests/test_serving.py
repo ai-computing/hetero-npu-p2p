@@ -1,5 +1,5 @@
 import unittest
-from hetero_p2p.serving import BatchOptions,CompletionLedger,RngdBinding
+from hetero_p2p.serving import BatchOptions,CompletionLedger,RngdBinding,validate_koni_batch
 class ServingTests(unittest.TestCase):
  def message(self,ids,kind='request_complete',batch='g1'):
   return dict(batch_id=batch,kind=kind,passed=True,requests=[dict(request_id=i,tokens=[1,2],passed=True) for i in ids])
@@ -20,6 +20,14 @@ class ServingTests(unittest.TestCase):
   msg=self.message(['a'],'batch_complete');msg['requests'][0]['tokens']=[3,4]
   with self.assertRaises(RuntimeError):s.accept(2,msg)
   self.assertIn(2,s.active)
+ def test_b16_requires_explicit_boolean_opt_in(self):
+  for width in (4,8):validate_koni_batch(width)
+  validate_koni_batch(16,True)
+  validate_koni_batch(12,experimental_batch12=True)
+  with self.assertRaises(ValueError):validate_koni_batch(12)
+  with self.assertRaises(ValueError):validate_koni_batch(12,experimental_batch12=1)
+  for width,flag in [(16,False),(16,'true'),(16,1),(True,True),(32,True)]:
+   with self.assertRaises(ValueError):validate_koni_batch(width,flag)
  def test_options(self):
   self.assertEqual(BatchOptions(8,16).width,8)
   for args in [(8,4),(0,8),(4,8,float('nan'))]:

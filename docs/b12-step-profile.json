@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "median_tps": 138.39397635322146,
+  "mean_host_stage_ms": {
+    "prepare": 0.22504909948869076,
+    "input_transfer": 0.8526787604902589,
+    "runtime_call": 83.84914837999229,
+    "output_materialize": 1.060474867093338,
+    "total": 85.98735110706457
+  },
+  "scope": "host wall intervals; async work may finish in output materialization",
+  "raw": "experiments/native_pd_2026_4/b12_feasibility_20261016/eager-profile-r1"
+}

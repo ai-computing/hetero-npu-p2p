@@ -8,7 +8,13 @@ batch=int(sys.argv[2]);device=int(sys.argv[3]);cfg=json.loads(Path(os.environ["H
 result={'kind':'real_prompt_p2p_host_parity','batch':batch,'device':device,'input_lengths':[140,167,227,271],'output_lengths':[32,128]}
 try:
  artifact=Path(cfg['atom_artifact'])
- engine=ExternalCacheDecoder(artifact,cfg['tables'])
+ from hetero_p2p.serving import validate_koni_batch
+ validate_koni_batch(batch,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False))
+ if batch in (12,16):
+  from hetero_p2p.adapters.atom_koni_external import ExternalCacheDecoder as ExperimentalDecoder
+  engine=ExperimentalDecoder(artifact,cfg['tables'],experimental_batch16=batch==16,experimental_batch12=batch==12)
+ else:
+  engine=ExternalCacheDecoder(artifact,cfg['tables'])
  if engine.batch_size!=batch:raise ValueError('artifact/config batch mismatch')
  engine.step_batch([128000]*batch,[0]*batch)
  import os,ctypes as C,hashlib

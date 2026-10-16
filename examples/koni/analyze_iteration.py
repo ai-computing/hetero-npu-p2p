@@ -32,7 +32,13 @@ for e in events:
   completions[e['generation']]=e;active=None
  elif stage=='response_sent':assert e['request_id'] in done
 assert active is None and not slots
-assert len(done)==len(copies)==sum(len(r['requests']) for r in http['rows'])==410
+cfg=json.loads((p/'config.json').read_text())
+assert len(http['rows'])==20
+warm=[r for r in http['rows'] if r['scenario']=='warm'];assert len(warm)==1
+request_count=len(warm[0]['requests']);assert request_count in (16,32)
+probe_count=10 if cfg.get('batch_size',8)<=8 else 32
+expected_count=probe_count+request_count+6*(2*request_count+32)
+assert len(done)==len(copies)==sum(len(r['requests']) for r in http['rows'])==expected_count
 assert set(done)=={r['id'] for row in http['rows'] for r in row['requests']}
 assert any(e['request_id'].startswith('probe-') for e in refills),'probe did not exercise refill of a running cohort'
 summary=dict(requests=len(done),exact_logits=True,ownership_violations=0,refills_with_continuing_requests=len(refills),median_dma_ms=statistics.median(e['dma_seconds'] for e in copies)*1000,config=json.loads((p/'config.json').read_text()),source=json.loads((p/'source-manifest.json').read_text()),cases={})

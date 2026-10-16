@@ -77,3 +77,7 @@
 ## 후속: 두 ATOM 확장과 성능 저하 보존
 
 [두 replica 검증](ITERATION_REPLICAS_KO.md)을 완료했다. 독립적인 generation/lease로848요청의 전체 logits를 확인했다. 초기 부분 batch8+6+2 문제를 고쳐 고정 길이16요청을8+8로 채웠고, 최종 sealed는136.35/177.73 tok/s였다. 혼합은 sealed147.01, refill117.31 tok/s로 refill이 손해여서 두 장 기본값은 sealed로 두었다. 한 장의 정책 이득을 두 장에 일반화하지 않는다. 초기 실패·성능 저하·최종 반복을 모두 보존했다. 다음은 카드 배치와 더 큰 batch feasibility, token-interval/전력 평가다.
+
+## 2026-10-16: 배치 확대와 KV 메모리 제약
+
+[PagedAttention, SOSP2023](https://arxiv.org/abs/2309.06180)은 KV 단편화·중복을 줄여 더 큰 배치를 수용하는 방향이다. 현재 관측한 B16 eager 실패는 논리 float32 캐시의 사전 할당 비용이며, 이를 단순히 단편화 문제로 단정하지 않는다. 현재 고정512 block/slot graph에서 논문의 동적 page pool을 쓰려면 graph block table, runtime 메모리 계약, P2P 목적지 레이아웃을 함께 바꾸고 재검증해야 한다. op 이름이 paged attention이라고 해서 그 메모리 관리가 구현된 것은 아니다. 우선 B12로 같은 context의 가능한 배치 폭을 실측하고, 이후 논리/물리 캐시 저장량과 export 계약을 분리 계측한다. 논문의 GPU 처리량 배율을 NPU 개선 예상치로 사용하지 않는다.

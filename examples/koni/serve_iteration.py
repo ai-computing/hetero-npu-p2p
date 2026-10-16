@@ -9,13 +9,13 @@ from hetero_p2p.layout import TokenMajorLayout
 from hetero_p2p import CopySession
 from hetero_p2p.iteration import IterationScheduler,QuantumPolicy
 from hetero_p2p.length_queue import LengthQueue
-from hetero_p2p.serving import BatchOptions,CompletionLedger,RngdBinding
+from hetero_p2p.serving import BatchOptions,CompletionLedger,RngdBinding,validate_koni_batch
 from hetero_p2p.llmd import StageBroker,StageError,serve_stage
 import queue,concurrent.futures,threading
 ap=argparse.ArgumentParser();ap.add_argument("--config",type=Path,required=True);args=ap.parse_args();cfg=json.loads(args.config.read_text());p=Path(cfg["out"]).resolve();p.mkdir(parents=True,exist_ok=False)
 example=Path(__file__).resolve().parent
 options=BatchOptions(cfg.get('batch_size',4),cfg.get('lookahead',2*cfg.get('batch_size',4)),cfg.get('collection_ms',20)/1000)
-if options.width not in (4,8):raise ValueError('KONI example supports B4/B8 artifacts')
+validate_koni_batch(options.width,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False))
 
 if len(str(p/"bridge.sock").encode())>=108:raise ValueError("output socket path is too long")
 binding=RngdBinding.from_path(cfg.get('rngd_device_path','/dev/rngd/npu1ch0'),cfg.get('rngd_logical_index'))
@@ -95,7 +95,7 @@ try:
     (phase/f'atom{device}'/'export-metadata.json').write_text(json.dumps(meta,indent=2))
     owners[device]={'conn':conn,'fds':fds,'metadata':meta}
     print('WORKER_READY',batch,device,flush=True)
-   if batch in (4,8):
+   if batch in (4,8,12,16):
     modeldir=Path(cfg['model'])
     model_cfg=ModelConfig(SimpleNamespace(**json.loads((modeldir/'config.json').read_text())));sd={}
     for shard in sorted(modeldir.glob('model-*.safetensors')):

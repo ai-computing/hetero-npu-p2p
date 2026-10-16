@@ -1,0 +1,42 @@
+{
+  "scope": "HF FP32 eager CPU on backend own history; four prompts, not task accuracy/non-inferiority",
+  "batch": 12,
+  "model": "/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+  "run": "hetero-npu-p2p/results/pd-b12-r1",
+  "rows": [
+    {
+      "lane": 0,
+      "count": 128,
+      "top1_match": 127,
+      "max_logit_regret": 0.17534255981445312,
+      "mean_logit_regret": 0.001369863748550415,
+      "mean_logit_abs_error": 0.030559644103050232
+    },
+    {
+      "lane": 1,
+      "count": 128,
+      "top1_match": 125,
+      "max_logit_regret": 0.11304283142089844,
+      "mean_logit_regret": 0.0015810579061508179,
+      "mean_logit_abs_error": 0.020588358864188194
+    },
+    {
+      "lane": 2,
+      "count": 128,
+      "top1_match": 128,
+      "max_logit_regret": 0.0,
+      "mean_logit_regret": 0.0,
+      "mean_logit_abs_error": 0.020502595230937004
+    },
+    {
+      "lane": 3,
+      "count": 128,
+      "top1_match": 126,
+      "max_logit_regret": 0.06832695007324219,
+      "mean_logit_regret": 0.0006902217864990234,
+      "mean_logit_abs_error": 0.020816706120967865
+    }
+  ],
+  "top1_match": 506,
+  "count": 512
+}

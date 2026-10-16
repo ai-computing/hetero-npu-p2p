@@ -11,4 +11,4 @@ for off,key,label,color in [(-.19,'sealed','Wait for batch end','#718599'),(.19,
 axes[0].set_xticks(range(3),['Fixed32','Fixed128','Mixed']);axes[0].set_ylabel('Output tokens / second');axes[0].set_ylim(0,1.25*max(c[k]['median_tps'] for c in s.values() for k in ['sealed','refill']));axes[0].legend(fontsize=8)
 axes[1].set_xticks(range(4),['32','64','96','128']);axes[1].set_xlabel('Output tokens per request (mixed workload)');axes[1].set_ylabel('Median HTTP response seconds');axes[1].set_ylim(0,30)
 for ax in axes:ax.grid(axis='y',alpha=.2);ax.set_axisbelow(True)
-fig.suptitle(f'KONI B8 | 1 RNGD + {atoms} ATOM | 3 counterbalanced repeats\nThroughput and HTTP response-time tradeoffs');fig.tight_layout();fig.savefig(a.output,dpi=150)
+fig.suptitle(f"KONI B{raw['config'].get('batch_size',8)} | 1 RNGD + {atoms} ATOM | 3 counterbalanced repeats\nThroughput and HTTP response-time tradeoffs");fig.tight_layout();fig.savefig(a.output,dpi=150)
