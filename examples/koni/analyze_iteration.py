@@ -1,7 +1,8 @@
 """Replay every slot lease and synchronized generation before reporting metrics."""
 import argparse,json,statistics
 from pathlib import Path
-ap=argparse.ArgumentParser();ap.add_argument('run',type=Path);ap.add_argument('--output',type=Path,required=True);ap.add_argument('--saturation',action='store_true');a=ap.parse_args();p=a.run
+ap=argparse.ArgumentParser();ap.add_argument('run',type=Path);ap.add_argument('--output',type=Path,required=True);ap.add_argument('--saturation',action='store_true');ap.add_argument('--mixed-only',action='store_true');a=ap.parse_args();p=a.run
+assert not (a.saturation and a.mixed_only)
 http=json.loads((p/'http-results.json').read_text());assert http['passed']
 events=[json.loads(x) for x in (p/'events.jsonl').read_text().splitlines()]
 slots={};active=None;generation=0;done={};copies=[];starts=[];refills=[];completions={}
@@ -33,22 +34,23 @@ for e in events:
  elif stage=='response_sent':assert e['request_id'] in done
 assert active is None and not slots
 cfg=json.loads((p/'config.json').read_text())
-assert len(http['rows'])==(5 if a.saturation else 20)
+assert len(http['rows'])==(5 if a.saturation else 8 if a.mixed_only else 20)
 warm=[r for r in http['rows'] if r['scenario']=='warm'];assert len(warm)==1
-request_count=len(warm[0]['requests']);assert request_count in ((48,84) if a.saturation else (16,32))
+request_count=len(warm[0]['requests']);assert request_count in ((48,84) if a.saturation else (16,32,48,84) if a.mixed_only else (16,32))
 probe_count=10 if cfg.get('batch_size',8)<=8 else 32
-expected_count=probe_count+request_count+(3*request_count if a.saturation else 6*(2*request_count+32))
+expected_count=probe_count+request_count+(3*request_count if a.saturation else 6*request_count if a.mixed_only else 6*(2*request_count+32))
 assert len(done)==len(copies)==sum(len(r['requests']) for r in http['rows'])==expected_count
 assert set(done)=={r['id'] for row in http['rows'] for r in row['requests']}
 assert any(e['request_id'].startswith('probe-') for e in refills),'probe did not exercise refill of a running cohort'
 summary=dict(requests=len(done),exact_logits=True,ownership_violations=0,refills_with_continuing_requests=len(refills),median_dma_ms=statistics.median(e['dma_seconds'] for e in copies)*1000,config=json.loads((p/'config.json').read_text()),source=json.loads((p/'source-manifest.json').read_text()),cases={})
-for case in (['fixed128'] if a.saturation else ['fixed32','fixed128','mixed32']):
+for case in (['fixed128'] if a.saturation else ['mixed'] if a.mixed_only else ['fixed32','fixed128','mixed32']):
  summary['cases'][case]={}
  for policy in (['sealed'] if a.saturation else ['sealed','refill']):
   prefix=f'{policy}-{case}-r';rows=[r for r in http['rows'] if r['scenario'].startswith(prefix)];assert len(rows)==3
-  if a.saturation:
+  if a.saturation or a.mixed_only:
    assert {r['scenario'] for r in rows}=={f'{prefix}{i}' for i in range(3)}
-   assert all(len(r['requests'])==request_count and all(q['output_tokens']==128 for q in r['requests']) for r in rows)
+   expected_lengths=([128]*request_count if a.saturation else [32,64,96,128]*(request_count//4))
+   assert all(len(r['requests'])==request_count and sorted(q['output_tokens'] for q in r['requests'])==sorted(expected_lengths) for r in rows)
   groups=[e for e in starts if all(j['id'].startswith(prefix) for j in e['requests'])]
   assert all(e['policy']['refill']==(policy=='refill') for e in groups)
   req=[q for r in rows for q in r['requests']];v=[r['tokens_per_second'] for r in rows]
