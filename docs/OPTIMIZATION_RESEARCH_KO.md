@@ -99,3 +99,9 @@ compile_b16.py에 HETERO_FULL_OUTPUT_PROJECTION=1 명시 옵션과 결과 기록
 B12/full/context512 혼합84요청에서는 sealed/refill 중앙값115.103/115.258tok/s로 거의 같고, 출력32 응답은24.532→33.284초로 악화했다. 완료620요청은exact지만 시작소스기록이 누락되어 사후기록임을 명시했다. Worker step 시간85.806–87.347ms에 비해 총step은576–704로 달라졌다.
 
 `simulate_mixed_queue.py`는 관측한 요청 순서만 보존하고 모든 요청을 처음부터 준비된 상태로 둔 진단 도구다. B12의6개 순서에서 lookahead32/length/sealed는640–704step, padding/sealed는모두608step이었다. 이 결과는 prefill/DMA/HTTP 대기와 실제 도착시간을 무시하므로 처리량 예측이나 개선 실측이 아니다. TurboTransformers의 비용 기반 배치 원리에서 착안해 앞서 구현한 padding 정책을 더 큰 배치에서도 검증할 이유이며, 논문 알고리즘 재현은 아니다. 다음 후보는 lookahead를 고정한 length/padding 비교이고, 대기열 확대는 별도 실험으로 분리한다. 세부기록은 workspace `experiments/2026-10-16-b12-b14-mixed84.md`에 있다.
+
+## B14 padding 혼합84 실측: 처리량과 지연의 상충
+
+[비교 JSON](b14-padding84-validation.json)과 [전체 반복·응답 그래프](b14-padding84.png)에 결과를 보존했다. 같은 B14/context448/full/lookahead32에서 length→padding의 sealed 중앙 처리량은124.838→125.586tok/s(+0.60%), refill은139.044→125.811tok/s(-9.52%)였다. 새padding실행620요청 전체exact/소유권위반0/정상종료를 확인했다. Padding을 처리량 기본정책으로 채택하지 않는다.
+
+Refill의 출력32 응답시간은31.198→16.624초로 개선됐지만 출력128은31.121→36.618초로 악화했다. 요청별 우선순위 변화가 있어 처리량만으로 정책을 평가할 수 없다. All-ready 모의시험은 실제 개선을 보장하지 않았다. 다음은 같은padding정책에서 lookahead32→84만 바꾸는 시험이며, 더 넓은 배치 선택 범위와 prefill 수집 지연을 함께 평가한다. 순차 단일프로세스 비교·고정4프롬프트/출력 상관이라는 한계는 유지된다.
