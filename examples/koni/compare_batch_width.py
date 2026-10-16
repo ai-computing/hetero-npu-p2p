@@ -11,7 +11,7 @@ for directory in (a.baseline,a.candidate):
  terminal=json.loads((directory/'result.json').read_text())
  assert http['passed'] and terminal['passed'] and audit['exact_logits'] and audit['ownership_violations']==0
  runs.append((cfg,http,audit))
-for key in ('model','tables','workload','atom_devices','rngd_device_path','rngd_logical_index','lookahead','collection_ms','batch_wait_ms'):
+for key in ('model','tables','workload','atom_devices','rngd_device_path','rngd_logical_index','lookahead','collection_ms','batch_wait_ms','queue_capacity'):
  assert runs[0][0].get(key)==runs[1][0].get(key),f'confounded configuration: {key}'
 warm_outputs=[]
 for cfg,http,audit in runs:
