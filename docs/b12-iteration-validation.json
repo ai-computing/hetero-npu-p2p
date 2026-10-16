@@ -1,0 +1,233 @@
+{
+  "requests": 640,
+  "exact_logits": true,
+  "ownership_violations": 0,
+  "refills_with_continuing_requests": 80,
+  "median_dma_ms": 2.9849769999999998,
+  "config": {
+    "out": "/tmp/hetero-pd-b12-r1",
+    "model": "/home/gspark/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+    "atom_artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_feasibility_20261016/r1/compiled/515927eb0738efb2.rbln",
+    "tables": "/home/gspark/workspace/01_pd_disag/experiments/npu_pd_extended_20261014/pd_atom/tables.npz",
+    "workload": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/real_workload_20261015/workload.json",
+    "helper": "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma",
+    "atom_python": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/devkit/torch-venv/bin/python",
+    "atom_devices": [
+      2
+    ],
+    "rngd_device_path": "/dev/rngd/npu3ch0",
+    "output_lengths": [
+      32,
+      128
+    ],
+    "warmups": 1,
+    "repeats": 3,
+    "prefill_port": 18821,
+    "decode_port": 18822,
+    "batch_wait_ms": 100,
+    "admission_ttl_seconds": 60,
+    "batch_size": 12,
+    "lookahead": 32,
+    "rngd_logical_index": 2,
+    "experimental_batch16": false,
+    "experimental_batch12": true
+  },
+  "source": {
+    "head": "44c3b4dcd96367bb71432c9923860741ec68e81a",
+    "dirty": true,
+    "sha256": {
+      "hetero-npu-p2p/src/hetero_p2p/llmd.py": "9d1608f89e79cb50abf3b65d2164293a797278de941faa81974349f634023543",
+      "hetero-npu-p2p/src/hetero_p2p/atom_experimental.py": "50f9bf638e326ea8cd2806bf480a09e3fd2ce35cacc3a025f2f27951b57b5135",
+      "hetero-npu-p2p/src/hetero_p2p/iteration.py": "ad31963db8b118f870f2001674df67ebdd777018dcc1cdda42505aa65605e6d9",
+      "hetero-npu-p2p/src/hetero_p2p/layout.py": "9f65559449d13a28e3dc051eafa161edb22ff013be27ca5382e753636bce4e56",
+      "hetero-npu-p2p/src/hetero_p2p/batching.py": "56dc5a781f25c372e586607234bbd0b1090a6501b37b43c0945a793ff074673f",
+      "hetero-npu-p2p/src/hetero_p2p/cli.py": "059358af939929a915aecb9335af2c1ad46de21d59fc4d5d93a6fc217372c4e4",
+      "hetero-npu-p2p/src/hetero_p2p/backend.py": "5982d22c3b860b5a8f1ad4e5f53af952e96af8d6cb31a6e6df7cd4439cfbc02d",
+      "hetero-npu-p2p/src/hetero_p2p/core.py": "5742eefa3cdd3951b77dc590a8442ed112a01327d789dff21e5b215791dbec4d",
+      "hetero-npu-p2p/src/hetero_p2p/serving.py": "85e0c0526a8856cdb4f7ea1bcecb074902dfb2d93cd0d9fcc7823a00b982e755",
+      "hetero-npu-p2p/src/hetero_p2p/length_queue.py": "8f26577a3f28169ac7c0ee7815d24666c85f0d08e73e144178a64452d7f6e7eb",
+      "hetero-npu-p2p/src/hetero_p2p/__init__.py": "27b13b96a1e5af013db367c454dc09d8699901ad7c2c38eba312cc38cd0f335c",
+      "hetero-npu-p2p/src/hetero_p2p/iteration_worker.py": "5f2059068773331daf34e434067ffb3eabcb2c3433341c79058fa76a6f1efccd",
+      "hetero-npu-p2p/src/hetero_p2p/adapters/rngd_dlfloat.py": "ef1e57c5897eff8d63f4f70aec23951911294f567f10f0fbdff2fb989f89ff9f",
+      "hetero-npu-p2p/src/hetero_p2p/adapters/atom_koni_external.py": "286848750940744a84337bdbe67172acc715f2e5896122352d471dad7c38b844",
+      "hetero-npu-p2p/src/hetero_p2p/adapters/__init__.py": "c121059624b185c39c5c5699f0dc635725227a11052b5ebb2b3f5e2ce95a216a",
+      "hetero-npu-p2p/examples/koni/quality_b16.py": "1575b6d371ea026229bcf148f8eef4465ae159986ba0d17a280175e2066a03d9",
+      "hetero-npu-p2p/examples/koni/plot_pd_scaling.py": "f60ae97fb91de61c6d557df6d99a5afff03fa93132fcff97042440a7072fe305",
+      "hetero-npu-p2p/examples/koni/validate_http.py": "4ce01a7331e973a455b83294ccb7f9991bd06a5b09afd404581f2b49acfb152f",
+      "hetero-npu-p2p/examples/koni/analyze_padding_policy.py": "a6a7c125e47627c9caa262b0dda2b9a5d2d8bc52d39f95f2fa0ab98522ee7dd1",
+      "hetero-npu-p2p/examples/koni/batch_pipeline.py": "3daac3f8260eacbcd7098a30ecd6173a7aca6a115d992b100fc3f5e8f518f934",
+      "hetero-npu-p2p/examples/koni/serve.py": "5c8cd8e1aca936c7f85e441b94ad630b8932dee33f9cc4b2d4c5077f3a1fef11",
+      "hetero-npu-p2p/examples/koni/analyze_pd_scaling.py": "d172cdb05436fa78e817fbdb3486a6a6c156eb0167c0a138a1295037cbb52c1e",
+      "hetero-npu-p2p/examples/koni/plot_pd_replicas.py": "27bb27430a9c0ca73855f7ef2f71e27c17cc600c8e20c417ff8a9dab450f70ea",
+      "hetero-npu-p2p/examples/koni/plot_quantum.py": "5caa8eb455b585874bb1b2132185cdc4e83dbd3e0e2f3563ae7776c5ed92d7f3",
+      "hetero-npu-p2p/examples/koni/batch_control.py": "33109f5af3d0f65a7964a75096ce223a478642bbe37b7b7d4d6327f6d39291de",
+      "hetero-npu-p2p/examples/koni/analyze_quantum.py": "f567addd05b4cfa6bf1f6e34572d3ff6a3382ce1951260303619c0d01ce21c84",
+      "hetero-npu-p2p/examples/koni/analyze_length_http.py": "80bb6543e397de9645373f47ed0b2cc8fca8604ee987d65e3871de22c9aa7254",
+      "hetero-npu-p2p/examples/koni/validate_padding_policy.py": "9ea4dde4279ff486e3d021605cfa44cd107e0a6c231ac4915dfd0c1efa162823",
+      "hetero-npu-p2p/examples/koni/analyze_iteration.py": "a207065cf573f5a984e8966ee8c883a02adcbbc23edae96a2cd29c081d5f0391",
+      "hetero-npu-p2p/examples/koni/validate_pd_scaling.py": "047072bc57302f60929218408d8cc9b9af1e6f8dd73f0244463250aef531d0ae",
+      "hetero-npu-p2p/examples/koni/validate_length_http.py": "4928ab6260b86c9d89af0f3e2769093e5a5d081b40258f2f1f91ac7137ccf5e5",
+      "hetero-npu-p2p/examples/koni/serve_length.py": "4bbc602a4004cd8dd32f5033df5a44e957ef9726f4cdc9e7cbd56a297d163773",
+      "hetero-npu-p2p/examples/koni/serve_length_worker.py": "eea6493270b57a5a8ba43a1d630c80667d3099399eb2275febb9e3f0be9fdb68",
+      "hetero-npu-p2p/examples/koni/validate_quantum.py": "4b3b5deea640ae120ad0773a8736d7ddd315b38b83b5ff11e38b0f4cace53ead",
+      "hetero-npu-p2p/examples/koni/diagnose_b16.py": "d04d939cf435322c59e5b8f8f537f161a4b632be1987fed58d0dd3c495b110e4",
+      "hetero-npu-p2p/examples/koni/probe_eager_batch.py": "e225f17e84611c45c2924a1454dd4e1025454d2aca8bcf040cf16f4607403ed6",
+      "hetero-npu-p2p/examples/koni/serve_iteration.py": "af64525db4e44d096a0b936b42befd76d583f985076cf0ff8dc8383e79f3ff78",
+      "hetero-npu-p2p/examples/koni/analyze_iteration_replicas.py": "477140d82f19fdfd958c8c7d0fcb80a2cb8f62e015b12f00690099dd26c1ee05",
+      "hetero-npu-p2p/examples/koni/serve_batch_worker.py": "8c547d64707ccfc71fc3b015ef91ab1b0ece98e72927a86299381a1924ffc0d0",
+      "hetero-npu-p2p/examples/koni/validate_batch_http.py": "836286824797d7d4f786603cf757c3bb6a1b464c4fb60d920105636ce8ac8a2f",
+      "hetero-npu-p2p/examples/koni/atom_worker.py": "593bc7c18c615b639d09bb6a7842f0dafd14dffb041ea15e5dc2cec147539f76",
+      "hetero-npu-p2p/examples/koni/plot_iteration.py": "35bdf39601dcb8697a121d8bc77d2fb31d263c3780838de364e2e94b973a1a05",
+      "hetero-npu-p2p/examples/koni/measure_external_batch.py": "c7e4d3c811db1977fa5efb90a6c68cd5156cd46db18ca758d39fe7a62c9d0193",
+      "hetero-npu-p2p/examples/koni/serve_batch.py": "7383b6b1e2c643d39f6e585465db15dfff4ddb3e2e781adf50f369c0626fd3a7",
+      "hetero-npu-p2p/examples/koni/batch_worker.py": "897664e5ed287d4c0dc3d386d26628ad3b84d338bf2c07b8fad731ab378f4d7b",
+      "hetero-npu-p2p/examples/koni/validate_iteration.py": "b68502b1e140e15f3c052505dc253a822c46246b34ce6716362895297b9bf49a",
+      "hetero-npu-p2p/examples/koni/compile_b16.py": "b776decd786ec97bec098540169ac2acce70fa2573435e1a9e38a72477137a3a",
+      "hetero-npu-p2p/examples/koni/plot_length_results.py": "acaa235b0916d77054d464f87427c04d806f096a3bd35d4d3462fb5b7233b7a6",
+      "hetero-npu-p2p/examples/koni/validate_iteration_replicas.py": "7ed7dae45ebbd34e6a5a2c8efaaa5b20a68bab4d27a6a9dbabac6072186cc172"
+    }
+  },
+  "cases": {
+    "fixed32": {
+      "sealed": {
+        "median_tps": 93.10744437198098,
+        "tps_repeats": [
+          91.1802224157983,
+          93.41863957241695,
+          93.10744437198098
+        ],
+        "median_response_seconds": 7.933485148998443,
+        "response_by_output": {
+          "32": 7.933485148998443
+        },
+        "useful_lane_fraction": 0.8888888888888888,
+        "iteration_count": 9,
+        "device_seconds": 26.52561336000508,
+        "producer_window_seconds": 26.54675512398535,
+        "internal_request_avg_tpot_ms": {
+          "median": 92.25866937096373,
+          "p99": 94.1781505164052,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      },
+      "refill": {
+        "median_tps": 93.06712506797176,
+        "tps_repeats": [
+          94.09731321760003,
+          93.06712506797176,
+          92.90626939248362
+        ],
+        "median_response_seconds": 7.917050699994434,
+        "response_by_output": {
+          "32": 7.917050699994434
+        },
+        "useful_lane_fraction": 0.8888888888888888,
+        "iteration_count": 9,
+        "device_seconds": 26.216277882966097,
+        "producer_window_seconds": 26.239448621010524,
+        "internal_request_avg_tpot_ms": {
+          "median": 91.07330483863235,
+          "p99": 92.38436345138678,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      },
+      "refill_vs_sealed": 0.9995669593953397
+    },
+    "fixed128": {
+      "sealed": {
+        "median_tps": 109.92964611021127,
+        "tps_repeats": [
+          109.02161880311071,
+          110.19265595742354,
+          109.92964611021127
+        ],
+        "median_response_seconds": 25.560774917001254,
+        "response_by_output": {
+          "128": 25.560774917001254
+        },
+        "useful_lane_fraction": 0.8888888888888888,
+        "iteration_count": 9,
+        "device_seconds": 105.20908039198548,
+        "producer_window_seconds": 105.2338476019795,
+        "internal_request_avg_tpot_ms": {
+          "median": 91.45263551187145,
+          "p99": 92.46738799208295,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      },
+      "refill": {
+        "median_tps": 110.16548692262862,
+        "tps_repeats": [
+          110.24070969064617,
+          109.66285689420076,
+          110.16548692262862
+        ],
+        "median_response_seconds": 25.49790297599975,
+        "response_by_output": {
+          "128": 25.49790297599975
+        },
+        "useful_lane_fraction": 0.8888888888888888,
+        "iteration_count": 9,
+        "device_seconds": 104.90601209299348,
+        "producer_window_seconds": 104.93013176294335,
+        "internal_request_avg_tpot_ms": {
+          "median": 91.42785332678757,
+          "p99": 91.68383057479468,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      },
+      "refill_vs_sealed": 1.0021453795292028
+    },
+    "mixed32": {
+      "sealed": {
+        "median_tps": 82.63810291178235,
+        "tps_repeats": [
+          81.49771306169224,
+          82.63810291178235,
+          82.83074856388201
+        ],
+        "median_response_seconds": 16.909801080495527,
+        "response_by_output": {
+          "32": 16.907149216000107,
+          "64": 7.939043066493468,
+          "96": 16.474664124994888,
+          "128": 22.38754260999849
+        },
+        "useful_lane_fraction": 0.6666666666666666,
+        "iteration_count": 21,
+        "device_seconds": 86.65310271295311,
+        "producer_window_seconds": 86.70214652497089,
+        "internal_request_avg_tpot_ms": {
+          "median": 91.15370034932211,
+          "p99": 93.68338268240987,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      },
+      "refill": {
+        "median_tps": 100.13034567093065,
+        "tps_repeats": [
+          90.14511705389057,
+          100.30262674205497,
+          100.13034567093065
+        ],
+        "median_response_seconds": 13.826754433001042,
+        "response_by_output": {
+          "32": 4.983826590498211,
+          "64": 7.922480331995757,
+          "96": 15.34063822600001,
+          "128": 22.69649274599942
+        },
+        "useful_lane_fraction": 0.8,
+        "iteration_count": 20,
+        "device_seconds": 72.73735816497356,
+        "producer_window_seconds": 72.78640614502365,
+        "internal_request_avg_tpot_ms": {
+          "median": 92.06024312718202,
+          "p99": 93.66068185267258,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      },
+      "refill_vs_sealed": 1.2116728499663354
+    }
+  }
+}
