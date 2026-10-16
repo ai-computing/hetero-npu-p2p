@@ -79,3 +79,7 @@ The KONI HTTP example now supports compiled B4/B8 widths with a shared worker an
 ## Fenced iteration refill (experimental)
 
 A separate one-ATOM KONI server can replace completed slots after synchronized decode quanta while preserving ongoing trajectories. In 410 fully validated requests, mixed-burst median throughput rose from73.49 to79.50 tok/s and overall median response time fell from20.52 to16.74 seconds; 128-token requests became slower and uniform-length throughput did not improve. This remains an opt-in experiment. See [implementation, evidence and limitations](docs/ITERATION_SERVING_KO.md) and [research log](docs/OPTIMIZATION_RESEARCH_KO.md).
+
+## Adaptive iteration quantum (experimental)
+
+The separate iteration server now defaults to 4 steps with empty slots and 128 with a full batch. In a controlled delayed-arrival test, median scenario throughput increased39.51→56.89 tok/s and short-request latency fell10.71→4.77 seconds, with a0.65-second cost to the initial long request. Saturated throughput stayed near94 tok/s. All304 requests passed full-logit and lease checks. See [conditions and limitations](docs/ADAPTIVE_QUANTUM_KO.md).

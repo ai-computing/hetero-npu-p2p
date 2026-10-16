@@ -64,3 +64,7 @@
 ## 후속: iteration 경로 실제 구현 완료
 
 [Step 경계 슬롯 교체 실험](ITERATION_SERVING_KO.md)에서 동일 서버의 sealed/refill을 비교했다. 410요청 exact, 진행 중 trajectory를 보존한 refill70건 통과. 혼합 처리량 중앙값+8.17%, 전체 응답시간 중앙값−18.44%였으나 출력128 지연은 증가했다. 다음 단계는 시간차 도착·adaptive quantum·두 ATOM 확장이며 전체 최적화 목표는 계속 진행 중이다.
+
+## 후속: 시간차 도착에서 adaptive quantum
+
+[304요청 비교](ADAPTIVE_QUANTUM_KO.md)에서 빈 슬롯일 때4step, 꽉 찼을 때128step을 실행하는 정책을 검증했다. fixed128 대비 시간차 도착 처리량+44.0%, 짧은 요청 응답시간−55.5%, 포화 처리량 유지. 긴 요청은+0.65초였다. fixed4도 유사한 이득이며 적응형의 고유 이점은 full batch 제어 왕복 감소다. 실험 iteration 서버의 초기 정책으로 채택했으나 일반적 우위를 주장하지 않는다. 다음은 두 ATOM 확장, 다양한 도착률·출력 분포, 실제 token-interval 지연과 전력 측정이다.

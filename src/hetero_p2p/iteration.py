@@ -88,10 +88,31 @@ class IterationScheduler:
                 if row.get('passed') is not True or row.get('reference_checked') is not True or row.get('max_abs_diff')!=0:raise RuntimeError('iteration validation failed')
                 if row.get('produced')!=expected or len(row['tokens'])!=expected or row.get('complete') is not (expected==entry.output_tokens):raise RuntimeError('iteration progress mismatch')
                 if tuple(row['tokens'][:entry.produced])!=entry.tokens:raise RuntimeError('previous output changed')
+            entries=dict(self.slots)
             finished=self.complete(ticket,device_completed=reply.get('device_completed'),passed=reply.get('passed'))
             for row in rows:
-                if row['slot'] in self.slots:self.slots[row['slot']].tokens=tuple(row['tokens'])
+                entries[row['slot']].tokens=tuple(row['tokens'])
             return finished
         except BaseException:
             self.poisoned=True
             raise
+
+@dataclass(frozen=True)
+class QuantumPolicy:
+    """Bound admission delay when slots are empty; amortize control when full.
+
+    This is a work bound, not a wall-clock SLO guarantee. Device speed, source
+    preparation and admission must be measured separately.
+    """
+    full: int = 128
+    partial: int = 4
+
+    def __post_init__(self):
+        if any(type(n) is not int or not 1<=n<=128 for n in (self.full,self.partial)):
+            raise ValueError('quantum must be an integer in [1,128]')
+        if self.partial>self.full:raise ValueError('partial quantum exceeds full quantum')
+
+    def choose(self, occupied, width):
+        if type(width) is not int or type(occupied) is not int or not 1<=occupied<=width:
+            raise ValueError('positive occupancy within batch width required')
+        return self.full if occupied==width else self.partial
