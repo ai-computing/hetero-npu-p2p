@@ -24,9 +24,9 @@ class IterationWorkerTests(unittest.TestCase):
   reply=d.run(cmd);finished=s.accept_reply(t,reply);return reply,finished
  def test_refill_keeps_continuing_trajectory_and_fences(self):
   e,d,s=self.setup_decoder();a=self.add(s,'a',2);b=self.add(s,'b',5)
-  reply,done=self.run_quantum(d,s,128);self.assertEqual(done,[a]);self.assertTrue(e.fenced);self.assertEqual(b.tokens,(0,0))
+  reply,done=self.run_quantum(d,s,128);self.assertEqual(done,[a]);self.assertEqual(a.tokens,(0,0));self.assertTrue(e.fenced);self.assertEqual(b.tokens,(0,0))
   c=self.add(s,'c',3);self.assertEqual(c.slot,a.slot)
-  reply,done=self.run_quantum(d,s,128);self.assertEqual({r.request_id for r in done},{'b','c'});self.assertEqual(e.notifications,2);self.assertFalse(d.slots)
+  reply,done=self.run_quantum(d,s,128);self.assertEqual({r.request_id for r in done},{'b','c'});self.assertEqual(e.notifications,2);self.assertEqual(b.tokens,(0,)*5);self.assertEqual(c.tokens,(0,)*3);self.assertFalse(d.slots)
  def test_forged_progress_poison_retains_owner(self):
   e,d,s=self.setup_decoder();row=self.add(s,'a',2);t=s.begin(1)
   reply=dict(kind='iteration_complete',generation=t.generation,steps=1,requests=[dict(slot=0,request_id='a',produced=2,tokens=[0,0],complete=True,passed=True,reference_checked=True,max_abs_diff=0)],device_completed=True,passed=True)

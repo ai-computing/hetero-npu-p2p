@@ -7,7 +7,7 @@ import argparse
 from hetero_p2p import SourceAllocation, DestinationAllocation, RngdPdmaBackend
 from hetero_p2p.layout import TokenMajorLayout
 from hetero_p2p import CopySession
-from hetero_p2p.iteration import IterationScheduler
+from hetero_p2p.iteration import IterationScheduler,QuantumPolicy
 from hetero_p2p.length_queue import LengthQueue
 from hetero_p2p.serving import BatchOptions,CompletionLedger,RngdBinding
 from hetero_p2p.llmd import StageBroker,StageError,serve_stage
@@ -51,7 +51,7 @@ class KVOnly(FullPrefillEngine):
  def _build_lmhead(self,cache_dir):pass
  def _next_token(self,x,P):return None
 result={'kind':'PD_HTTP_batch','passed':False};wave_rows=[]
-commands=queue.Queue();rpc_lock=threading.Lock();accepting=True;servers=[];decode_futures={};pending=[];live_batches={};sessions={};tokenizer=None;staged={};waiting=LengthQueue(options.width,options.lookahead,options.collection_seconds);policy={'policy':'length','refill':True,'quantum':128}
+commands=queue.Queue();rpc_lock=threading.Lock();accepting=True;servers=[];decode_futures={};pending=[];live_batches={};sessions={};tokenizer=None;staged={};waiting=LengthQueue(options.width,options.lookahead,options.collection_seconds);policy={'policy':'length','refill':True,'quantum':128,'partial_quantum':4}
 def event(row):
  with (p/'events.jsonl').open('a') as f:f.write(json.dumps(dict({'time':time.perf_counter()},**row))+'\n')
 def rpc(kind,*args):
@@ -173,6 +173,7 @@ try:
      if control.exists():
       candidate=json.loads(control.read_text())
       if candidate.get('policy') not in ('fifo','length','padding') or type(candidate.get('refill')) is not bool or type(candidate.get('quantum')) is not int or not 1<=candidate['quantum']<=128:raise ValueError('invalid iteration policy')
+      QuantumPolicy(candidate['quantum'],candidate.get('partial_quantum',candidate['quantum']))
       if candidate!=policy:policy=candidate;event(dict(stage='policy',**policy))
       (p/'policy-ack.json').write_text(json.dumps(policy))
     # Prepare sources during decode, but prioritize resuming a fenced active set.
@@ -189,7 +190,8 @@ try:
        entry=scheduler.reserve(job.request_id,job.output_tokens,staged[job.request_id][0]);assert entry is not None
        admit(entry)
      if scheduler.slots:
-      ticket=scheduler.begin(policy['quantum'])
+      quantum=QuantumPolicy(policy['quantum'],policy.get('partial_quantum',policy['quantum'])).choose(len(scheduler.slots),batch)
+      ticket=scheduler.begin(quantum)
       jobs=[dict(slot=slot,id=rid,tokens=list(scheduler.slots[slot].owner),output=scheduler.slots[slot].output_tokens,produced=scheduler.slots[slot].produced,admitted=True) for slot,rid in ticket.requests]
       owner['conn'].send(json.dumps(dict(cmd='decode_iteration',generation=ticket.generation,steps=ticket.steps,requests=jobs)).encode())
       event(dict(stage='iteration_start',replica=device,generation=ticket.generation,steps=ticket.steps,requests=jobs,compiled_batch=batch,policy=dict(policy)))
