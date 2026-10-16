@@ -1,0 +1,63 @@
+{
+  "scope": "same-host ABBA; two process blocks per configuration; batch and context change together; not significance or quality proof",
+  "requests": 1472,
+  "rows": [
+    {
+      "order": 1,
+      "batch": 12,
+      "context": 512,
+      "path": "hetero-npu-p2p/results/pd-b12-sat84-r1",
+      "repeats": [
+        135.31261126373676,
+        133.46867981520543,
+        133.71503892658612
+      ],
+      "median_tps": 133.71503892658612
+    },
+    {
+      "order": 2,
+      "batch": 14,
+      "context": 448,
+      "path": "hetero-npu-p2p/results/pd-b14-sat84-r1",
+      "repeats": [
+        151.5280600838017,
+        151.23467557885726,
+        151.74380335738184
+      ],
+      "median_tps": 151.5280600838017
+    },
+    {
+      "order": 3,
+      "batch": 14,
+      "context": 448,
+      "path": "hetero-npu-p2p/results/pd-b14-sat84-r2",
+      "repeats": [
+        151.44762238382583,
+        151.08020628662177,
+        151.8381475687369
+      ],
+      "median_tps": 151.44762238382583
+    },
+    {
+      "order": 4,
+      "batch": 12,
+      "context": 512,
+      "path": "hetero-npu-p2p/results/pd-b12-sat84-r2",
+      "repeats": [
+        134.815660067132,
+        134.39388608109257,
+        135.21878998235164
+      ],
+      "median_tps": 134.815660067132
+    }
+  ],
+  "paired_b14_over_b12": [
+    1.1332162881618388,
+    1.1233681777651934
+  ],
+  "all_pairs_faster": true,
+  "process_median_by_batch": {
+    "12": 134.26534949685907,
+    "14": 151.48784123381375
+  }
+}
