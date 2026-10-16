@@ -26,4 +26,22 @@ class LengthQueueTests(unittest.TestCase):
   q=LengthQueue();q.add('old',32,0);q.add('new',32,1)
   self.assertEqual(q.take(1.001),[])
   self.assertEqual(len(q.take(1.1)),2)
+ def test_padding_matches_exhaustive_oldest_constrained_selection(self):
+  import itertools,random
+  rng=random.Random(27)
+  for _ in range(100):
+   lengths=[rng.randrange(1,129) for _ in range(8)]
+   q=LengthQueue(width=4,lookahead=8)
+   for i,n in enumerate(lengths):q.add(str(i),n,i)
+   picked=q.take(10,policy='padding')
+   score=lambda ns:4*max(ns)-sum(ns)
+   optimum=min(score([lengths[0]]+[lengths[i] for i in ids]) for ids in itertools.combinations(range(1,8),3))
+   self.assertEqual(score([j.output_tokens for j in picked]),optimum)
+   self.assertIn('0',[j.request_id for j in picked])
+   self.assertEqual(len(q.jobs),4)
+ def test_padding_partial_and_single_slot(self):
+  q=LengthQueue(width=8,lookahead=16)
+  q.add('a',32,0);q.add('b',128,1)
+  self.assertEqual([j.request_id for j in q.take(2,policy='padding',limit=1)],['a'])
+  self.assertEqual([j.request_id for j in q.take(3,policy='padding')],['b'])
 if __name__=='__main__' :unittest.main()
