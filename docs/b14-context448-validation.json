@@ -1,0 +1,79 @@
+{
+  "requests": 224,
+  "exact_logits": true,
+  "ownership_violations": 0,
+  "refills_with_continuing_requests": 18,
+  "median_dma_ms": 2.9743614999999997,
+  "config": {
+    "out": "/tmp/hetero-b14-s448-r1",
+    "model": "/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+    "atom_artifact": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
+    "tables": "/home/user/workspace/01_pd_disag/experiments/npu_pd_extended_20261014/pd_atom/tables.npz",
+    "workload": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/real_workload_20261015/workload.json",
+    "helper": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma",
+    "atom_python": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/devkit/torch-venv/bin/python",
+    "atom_devices": [
+      2
+    ],
+    "rngd_device_path": "/dev/rngd/npu3ch0",
+    "output_lengths": [
+      32,
+      128
+    ],
+    "warmups": 1,
+    "repeats": 3,
+    "prefill_port": 18821,
+    "decode_port": 18822,
+    "batch_wait_ms": 100,
+    "admission_ttl_seconds": 60,
+    "batch_size": 14,
+    "lookahead": 32,
+    "rngd_logical_index": 2,
+    "experimental_batch16": false,
+    "experimental_batch12": false,
+    "experiment_design": {
+      "scope": "B14/context448 first P2P validation;48 requests includes tail",
+      "requests": 48,
+      "warm_output": 128
+    },
+    "context": 448,
+    "experimental_batch14": true
+  },
+  "source": {
+    "head": "d1476b2f8938be31cde37a9aacf876b716ffb4cf",
+    "dirty": true,
+    "files": {
+      "examples/koni/serve_iteration.py": "f8613deb3d034114dc0881a3c18e885e9803d9bebab7f2161ddbdcaedd978097",
+      "examples/koni/serve_length_worker.py": "16dbaf47a7b24c92d080c03a6e71ae5b653e3e8e81a7ba0405d2f3af997f6a2e",
+      "src/hetero_p2p/adapters/atom_koni_external.py": "7ac1f8822bfbcab43d9c8c96ffc70fc73184e5f20f0217549e514a262677e00c",
+      "src/hetero_p2p/iteration_worker.py": "77d801dfe05bb2b44cec23df0f466876ebe8413e236b476e8c9ee6bb6df6e66d",
+      "src/hetero_p2p/serving.py": "7dfd9873aac4bce9e0fb1a0b6348071240fc246725c2ceeac0834c0c0956e58c",
+      "src/hetero_p2p/layout.py": "9f65559449d13a28e3dc051eafa161edb22ff013be27ca5382e753636bce4e56"
+    }
+  },
+  "cases": {
+    "fixed128": {
+      "sealed": {
+        "median_tps": 129.7057049001546,
+        "tps_repeats": [
+          128.3431928125689,
+          129.7057049001546,
+          130.14246899957513
+        ],
+        "median_response_seconds": 25.100320122503035,
+        "response_by_output": {
+          "128": 25.100320122503035
+        },
+        "useful_lane_fraction": 0.8571428571428571,
+        "iteration_count": 12,
+        "device_seconds": 134.41408081502595,
+        "producer_window_seconds": 134.45119426799647,
+        "internal_request_avg_tpot_ms": {
+          "median": 87.8847003149008,
+          "p99": 89.66814585827113,
+          "scope": "worker token timestamps; request-average TPOT distribution, not client streaming or token-interval p99"
+        }
+      }
+    }
+  }
+}

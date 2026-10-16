@@ -64,6 +64,19 @@ class CoreTests(unittest.TestCase):
             cache=i//8
             self.assertGreaterEqual(span.destination_offset,cache*8*1048576+7*1048576)
             self.assertLessEqual(span.destination_offset+span.length,(cache+1)*8*1048576)
+    def test_b14_context448_last_slot_bounds(self):
+        stride=8*448*128*2
+        os.ftruncate(self.fd,64*14*stride)
+        layout=TokenMajorLayout(64,8,448,128,format='test')
+        source=SourceAllocation(64,64*8*272*128*2,object(),'test')
+        maps=[dict(index=i,block_index=0,offset=i*14*stride) for i in range(64)]
+        plan=layout.prefix_plan(source,(self.dest,),maps,272,slot=13,batch=14)
+        self.assertEqual(plan.commands,64)
+        for i,span in enumerate(plan.spans):
+            cache=i//8
+            self.assertGreaterEqual(span.destination_offset,(cache*14+13)*stride)
+            self.assertLessEqual(span.destination_offset+span.length,(cache+1)*14*stride)
+
     def test_dma_device_mismatch_rejected_before_submission(self):
         from hetero_p2p.backend import RngdPdmaBackend
         backend=object.__new__(RngdPdmaBackend);backend.device='/dev/rngd/npu0ch0'

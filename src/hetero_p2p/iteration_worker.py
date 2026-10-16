@@ -31,7 +31,7 @@ class IterationDecoder:
             slot=j['slot'];tokens=j['tokens'];count=j['output'];produced=j['produced']
             if type(slot) is not int or not 0<=slot<self.engine.batch_size:raise ValueError('invalid slot')
             if type(count) is not int or not 1<=count<=128 or type(produced) is not int or not 0<=produced<count:raise ValueError('invalid progress')
-            if count-produced<steps or len(tokens)+count>512:raise ValueError('quantum exceeds request/context')
+            if count-produced<steps or len(tokens)+count>getattr(self.engine,'context',512):raise ValueError('quantum exceeds request/context')
             key=tuple(tokens)
             if key not in self.references:raise ValueError('full-logit reference required')
             if slot in self.slots:

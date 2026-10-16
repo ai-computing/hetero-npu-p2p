@@ -5,28 +5,30 @@ from hetero_p2p.atom_experimental import export_live_caches
 import sys
 p=Path(sys.argv[1]).resolve();root=Path(__file__).resolve().parent.parent
 batch=int(sys.argv[2]);device=int(sys.argv[3]);cfg=json.loads(Path(os.environ["HETERO_BATCH_CONFIG"]).read_text())
+context=cfg.get('context',512)
+if type(context) is not int or context not in (448,512):raise ValueError('supported context buckets:448/512')
 result={'kind':'real_prompt_p2p_host_parity','batch':batch,'device':device,'input_lengths':[140,167,227,271],'output_lengths':[32,128]}
 try:
  artifact=Path(cfg['atom_artifact'])
  from hetero_p2p.serving import validate_koni_batch
- validate_koni_batch(batch,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False))
- if batch in (12,16):
+ validate_koni_batch(batch,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False),cfg.get('experimental_batch14',False))
+ if batch in (12,14,16):
   from hetero_p2p.adapters.atom_koni_external import ExternalCacheDecoder as ExperimentalDecoder
-  engine=ExperimentalDecoder(artifact,cfg['tables'],experimental_batch16=batch==16,experimental_batch12=batch==12)
+  engine=ExperimentalDecoder(artifact,cfg['tables'],experimental_batch16=batch==16,experimental_batch12=batch==12,experimental_batch14=batch==14,context=context)
  else:
   engine=ExternalCacheDecoder(artifact,cfg['tables'])
  if engine.batch_size!=batch:raise ValueError('artifact/config batch mismatch')
  engine.step_batch([128000]*batch,[0]*batch)
  import os,ctypes as C,hashlib
  state=json.loads((p/'live-capture.json').read_text());assert state['pid']==os.getpid()
- exports=export_live_caches(engine,engine.cache_device_addresses(),batch*1048576,state,experimental=True)
+ exports=export_live_caches(engine,engine.cache_device_addresses(),batch*8*context*128*2,state,experimental=True)
  mappings,records=exports.mappings,exports.records
  result['mappings']=mappings;result['exports']=records
  import torch,hashlib
  (p/'capture-complete').write_text('disable breakpoints before benchmark')
  C.CDLL(None).getppid();assert (p/'breakpoints-disabled').exists()
  workload=json.loads(Path(cfg['workload']).read_text())
- prompts=[r['prompt_token_ids'] for r in workload['requests']]*(batch//4);positions=[len(x)-1 for x in prompts]
+ base_prompts=[r['prompt_token_ids'] for r in workload['requests']];prompts=[base_prompts[i%4] for i in range(batch)];positions=[len(x)-1 for x in prompts]
  with socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET) as conn:
   conn.connect(os.path.relpath(p.parent.parent/'bridge.sock'))
   fds=array.array('i',[r['fd'] for r in records])
@@ -51,7 +53,7 @@ try:
     jobs=command['requests'];assert 1<=len(jobs)<=batch
     assert len({j['slot'] for j in jobs})==len(jobs)==len({j['id'] for j in jobs})
     for j in jobs:
-     assert 0<=j['slot']<batch and 1<=j['output']<=128 and 2<=len(j['tokens']) and len(j['tokens'])+j['output']<=512
+     assert 0<=j['slot']<batch and 1<=j['output']<=128 and 2<=len(j['tokens']) and len(j['tokens'])+j['output']<=context
     engine.notify_cache_write(range(64))
     generated={j['id']:[] for j in jobs};checks={j['id']:True for j in jobs};diffs={j['id']:0.0 for j in jobs}
     lookup={tuple(prompt):reference[i] for i,prompt in enumerate(prompts)}
@@ -88,7 +90,7 @@ try:
     assert reference is None
     host=[]
     for file in command['files']:
-     with np.load(file) as z:host.append(np.stack((z['keys'].transpose(0,1,3,2),z['values']),axis=1).reshape(64,8,512,128))
+     with np.load(file) as z:host.append(np.stack((z['keys'].transpose(0,1,3,2),z['values']),axis=1).reshape(64,8,512,128)[:,:,:context,:].copy())
     for i,cache in enumerate(engine.caches):cache.copy_(torch.from_numpy(np.stack([h[i] for h in host])))
     torch.rbln.synchronize();del host
    else:

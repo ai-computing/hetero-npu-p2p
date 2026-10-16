@@ -87,3 +87,9 @@
 B12 eager host wall 계측에서 runtime 호출83.849ms/전체85.987ms였다. Kernel profiler는 아니지만 입력·출력 Python 처리만으로 큰 개선을 얻을 근거는 약하다. 현재 P2P graph는 attention 출력 투영을8개 group 부분 곱과 순차 합산으로 계산한다. ResidentDecode에 full_output_projection 옵션이 있다. 과거 optimization_round2는 resident B24/host KV 경로에서 full projection을 사용했으나 현재 external-KV B12의 동일조건 비교는 확인되지 않았다.
 
 compile_b16.py에 HETERO_FULL_OUTPUT_PROJECTION=1 명시 옵션과 결과 기록을 추가했다. 기본값0은 유지한다. 현재48요청 비교를 마친 뒤 별도 artifact로 컴파일하고, 같은배치 전송 정합성 및 독립 FP32 수치를 검증할 예정이다. 반올림 순서가 달라지므로 기존artifact의 bitwise 일치만으로 품질을 판단하지 않는다. 새 옵션의 컴파일·성능 시험은 아직 수행하지 않았다.
+
+## 2026-10-16: 메모리 제한 이후의 후보
+
+[KIVI, ICML 2024](https://arxiv.org/abs/2402.02750)는 key를 channel 방향, value를 token 방향으로 양자화하는 비대칭 KV 압축을 제안한다. 현재 경로에 적용하려면 압축된 KV를 attention이 직접 소비하거나 작은 단위로 복원해야 한다. 전체 KV를 매 step 복원한 채 별도 원본까지 유지하면 이 환경의 eager 할당 문제를 해결하지 못할 수 있다. 이는 현재 코드의 메모리 수명에 근거한 적용 판단이다.
+
+현재 선택은 먼저 B14/context448의 정밀도를 유지한 경로를 검증하는 것이다. KIVI는 아직 구현하지 않았으며 GPU 논문의 처리량 배수를 ATOM 예상치로 사용하지 않는다. 후속 도입에는 compiler의 저정밀 attention/복원 지원, P2P 물리 레이아웃 계약, 실제 peak memory와 품질 검증이 필요하다. 공식 RBLN0.11.0 검색에서 이 custom graph의 INT4 지원을 확증하지 못했으므로 지원 여부는 미확인이다. 검색 부재를 기능 부재로 간주하지 않는다.

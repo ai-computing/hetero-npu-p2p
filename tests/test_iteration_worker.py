@@ -37,6 +37,15 @@ class IterationWorkerTests(unittest.TestCase):
   with self.assertRaises(ValueError):d.run(dict(generation=1,steps=1,requests=[]))
   self.assertTrue(d.poisoned)
 
+class ContextLimitTests(unittest.TestCase):
+ def test_context_limit_rejected_before_cache_notification(self):
+  e=FakeEngine();e.context=448
+  d=IterationDecoder(e,e.synchronize,{})
+  with self.assertRaisesRegex(ValueError,'context'):
+   d.run(dict(generation=1,steps=1,requests=[dict(slot=0,id='x',tokens=[1]*321,output=128,produced=0,admitted=True)]))
+  self.assertEqual(e.notifications,0)
+  self.assertTrue(e.fenced)
+
 class ReplicaIsolationTests(unittest.TestCase):
  setup_decoder=IterationWorkerTests.setup_decoder
  add=IterationWorkerTests.add

@@ -15,7 +15,11 @@ import queue,concurrent.futures,threading
 ap=argparse.ArgumentParser();ap.add_argument("--config",type=Path,required=True);args=ap.parse_args();cfg=json.loads(args.config.read_text());p=Path(cfg["out"]).resolve();p.mkdir(parents=True,exist_ok=False)
 example=Path(__file__).resolve().parent
 options=BatchOptions(cfg.get('batch_size',4),cfg.get('lookahead',2*cfg.get('batch_size',4)),cfg.get('collection_ms',20)/1000)
-validate_koni_batch(options.width,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False))
+validate_koni_batch(options.width,cfg.get('experimental_batch16',False),cfg.get('experimental_batch12',False),cfg.get('experimental_batch14',False))
+
+context=cfg.get('context',512)
+if type(context) is not int or context not in (448,512):raise ValueError('supported context buckets:448/512')
+if context!=512 and options.width not in (12,14,16):raise ValueError('context448 requires experimental adapter')
 
 if len(str(p/"bridge.sock").encode())>=108:raise ValueError("output socket path is too long")
 binding=RngdBinding.from_path(cfg.get('rngd_device_path','/dev/rngd/npu1ch0'),cfg.get('rngd_logical_index'))
@@ -23,7 +27,7 @@ devices=cfg["atom_devices"]
 if not isinstance(devices,list) or not devices or any(type(d) is not int or d not in (2,3) for d in devices) or len(set(devices))!=len(devices):raise ValueError("select a nonempty unique subset of authorized ATOM2/3")
 if f'npu{binding.index}:' in subprocess.check_output(['furiosa-smi','ps'],text=True):raise RuntimeError('selected RNGD is in use')
 (p/"config.json").write_text(json.dumps(cfg,indent=2));os.environ["HETERO_BATCH_CONFIG"]=str((p/"config.json").resolve())
-backend=RngdPdmaBackend(cfg["helper"],cfg.get("rngd_device_path","/dev/rngd/npu1ch0"));layout=TokenMajorLayout(64,8,512,128)
+backend=RngdPdmaBackend(cfg["helper"],cfg.get("rngd_device_path","/dev/rngd/npu1ch0"));layout=TokenMajorLayout(64,8,context,128)
 assert_atom_idle(p)
 import torch,numpy as np
 from safetensors import safe_open
@@ -67,10 +71,10 @@ def decode(handle,tokens,count):
  return rpc('decode',handle,tokens,count)
 workload=json.loads(Path(cfg['workload']).read_text())
 prompts=[r['prompt_token_ids'] for r in workload['requests']]
-if len(prompts)!=4 or any(not 2<=len(x)<=384 or any(type(t) is not int or not 0<=t<128256 for t in x) for x in prompts):raise ValueError('require four valid KONI token prompts of length2..384')
+if len(prompts)!=4 or any(not 2<=len(x)<=context-128 or any(type(t) is not int or not 0<=t<128256 for t in x) for x in prompts):raise ValueError('require four valid KONI token prompts of length2..384')
 if not cfg.get('output_lengths',[32,128]) or any(n not in (32,128) for n in cfg.get('output_lengths',[32,128])):raise ValueError('validated output lengths are 32 and 128')
 if type(cfg.get('repeats',3)) is not int or cfg.get('repeats',3)<1:raise ValueError('positive measured repeat count required')
-prompts=prompts*(options.width//4)
+prompts=[prompts[i%4] for i in range(options.width)]
 prefixes=[len(x)-1 for x in prompts]
 head_bytes=[((n+15)//16)*4096 for n in prefixes]
 try:
@@ -95,7 +99,7 @@ try:
     (phase/f'atom{device}'/'export-metadata.json').write_text(json.dumps(meta,indent=2))
     owners[device]={'conn':conn,'fds':fds,'metadata':meta}
     print('WORKER_READY',batch,device,flush=True)
-   if batch in (4,8,12,16):
+   if batch in (4,8,12,14,16):
     modeldir=Path(cfg['model'])
     model_cfg=ModelConfig(SimpleNamespace(**json.loads((modeldir/'config.json').read_text())));sd={}
     for shard in sorted(modeldir.glob('model-*.safetensors')):

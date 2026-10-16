@@ -78,13 +78,16 @@ class RngdBinding:
         if observed!={self.index}:raise RuntimeError(f'compute/DMA physical mapping mismatch: expected {self.index}, observed {observed}')
 
 
-def validate_koni_batch(width, experimental_batch16=False, experimental_batch12=False):
+def validate_koni_batch(width, experimental_batch16=False, experimental_batch12=False, experimental_batch14=False):
     """Gate the unvalidated B16 serving path before allocating hardware."""
-    if type(experimental_batch16) is not bool or type(experimental_batch12) is not bool:
+    if any(type(x) is not bool for x in (experimental_batch16, experimental_batch12, experimental_batch14)):
         raise ValueError('experimental_batch16 must be a boolean')
-    if type(width) is not int or width not in (4, 8, 12, 16):
+    if type(width) is not int or width not in (4, 8, 12, 14, 16):
         raise ValueError('KONI example supports B4/B8 and opt-in B16 artifacts')
     if width == 16 and not experimental_batch16:
         raise ValueError('B16 requires experimental_batch16=true; PD validation pending')
     if width == 12 and not experimental_batch12:
         raise ValueError('B12 requires experimental_batch12=true; PD validation pending')
+
+    if width == 14 and not experimental_batch14:
+        raise ValueError("B14 requires experimental_batch14=true; PD validation pending")
