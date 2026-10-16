@@ -1,0 +1,63 @@
+{
+  "scope": "ABBA sequential shared host, two process blocks per graph; no independence or significance claim",
+  "rows": [
+    {
+      "order": 1,
+      "graph": "full",
+      "path": "hetero-npu-p2p/results/proj-abba-1-full",
+      "repeats": [
+        132.06964532144804,
+        131.89678713871947,
+        132.4953936697644
+      ],
+      "median_tps": 132.06964532144804,
+      "worker_seconds": 131.13675659701403
+    },
+    {
+      "order": 2,
+      "graph": "grouped",
+      "path": "hetero-npu-p2p/results/proj-abba-2-grouped",
+      "repeats": [
+        126.37659050628606,
+        126.24984518234565,
+        126.42301591359187
+      ],
+      "median_tps": 126.37659050628606,
+      "worker_seconds": 137.30087320003076
+    },
+    {
+      "order": 3,
+      "graph": "grouped",
+      "path": "hetero-npu-p2p/results/proj-abba-3-grouped",
+      "repeats": [
+        126.79129815320458,
+        126.62124738190138,
+        126.33601133670005
+      ],
+      "median_tps": 126.62124738190138,
+      "worker_seconds": 137.53322043799562
+    },
+    {
+      "order": 4,
+      "graph": "full",
+      "path": "hetero-npu-p2p/results/proj-abba-4-full",
+      "repeats": [
+        131.22776939474338,
+        131.55459546739453,
+        131.3897130573037
+      ],
+      "median_tps": 131.3897130573037,
+      "worker_seconds": 132.25558221898973
+    }
+  ],
+  "paired_full_over_grouped": [
+    1.0450483336538408,
+    1.0376592852621345
+  ],
+  "all_pairs_faster": true,
+  "requests": 896,
+  "process_median_by_graph": {
+    "full": 131.72967918937587,
+    "grouped": 126.49891894409373
+  }
+}

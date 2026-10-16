@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch,torch_rbln
 from hetero_p2p.adapters.atom_koni_external import ExternalCacheDecoder
-ap=argparse.ArgumentParser();ap.add_argument('--artifact',required=True);ap.add_argument('--reference-root',required=True);ap.add_argument('--reference-batch',type=int,choices=[8,12,16],default=8);ap.add_argument('--profile',action='store_true');ap.add_argument('--batch',type=int,choices=[8,12,16],required=True);ap.add_argument('--out',type=Path,required=True);a=ap.parse_args();N=a.batch;p=a.out.resolve();p.mkdir(parents=True,exist_ok=False);root=Path(a.reference_root);result={'kind':'host admission only','batch':N,'passed':False}
+ap=argparse.ArgumentParser();ap.add_argument('--artifact',required=True);ap.add_argument('--reference-root',required=True);ap.add_argument('--reference-batch',type=int,choices=[8,12,16],default=8);ap.add_argument('--profile',action='store_true');ap.add_argument('--save-logits',action='store_true');ap.add_argument('--batch',type=int,choices=[8,12,16],required=True);ap.add_argument('--out',type=Path,required=True);a=ap.parse_args();N=a.batch;p=a.out.resolve();p.mkdir(parents=True,exist_ok=False);root=Path(a.reference_root);result={'kind':'host admission only','batch':N,'passed':False}
 import os,subprocess
 if os.environ.get('RBLN_DEVICES')!='2':raise RuntimeError('authorized physical ATOM2 required')
 from batch_control import assert_atom_idle
@@ -21,7 +21,9 @@ try:
   torch.rbln.synchronize();current=[x[-1] for x in prompts];times=[];actual=[]
   for step in range(128):
    begin=time.perf_counter();out=e.step_batch(current,[len(x)-1+step for x in prompts]);times.append(time.perf_counter()-begin);actual.append(out.copy());current=out.argmax(axis=1).tolist()
-  actual=np.stack(actual,axis=1);row=dict(repeat=repeat,warmup=repeat==0,seconds=sum(times),tokens_per_second=(128*N)/sum(times),median_step_ms=float(np.median(times)*1000),finite=bool(np.isfinite(actual).all()),exact_to_reference=bool(np.array_equal(actual,expected)),top1_matches=int(np.sum(actual.argmax(-1)==expected.argmax(-1))),top1_total=128*N,max_abs_diff=float(np.max(abs(actual-expected))));rows.append(row);(p/'measure-progress.json').write_text(json.dumps(rows,indent=2));print(json.dumps(row),flush=True);(p/f'device-repeat{repeat}.txt').write_text(subprocess.check_output(['rbln-smi'],text=True))
+  actual=np.stack(actual,axis=1)
+  if a.save_logits and repeat==1:np.savez(p/'own-trajectory.npz',logits=actual[:4],tokens=actual[:4].argmax(-1))
+  row=dict(repeat=repeat,warmup=repeat==0,seconds=sum(times),tokens_per_second=(128*N)/sum(times),median_step_ms=float(np.median(times)*1000),finite=bool(np.isfinite(actual).all()),exact_to_reference=bool(np.array_equal(actual,expected)),top1_matches=int(np.sum(actual.argmax(-1)==expected.argmax(-1))),top1_total=128*N,max_abs_diff=float(np.max(abs(actual-expected))));rows.append(row);(p/'measure-progress.json').write_text(json.dumps(rows,indent=2));print(json.dumps(row),flush=True);(p/f'device-repeat{repeat}.txt').write_text(subprocess.check_output(['rbln-smi'],text=True))
  result.update(reference_batch=a.reference_batch,profile_scope='host wall intervals; async work may finish in output materialization',step_profile=list(e.step_profile),passed=all(r['finite'] and r['exact_to_reference'] for r in rows),rows=rows,parity_passed=all(r['exact_to_reference'] for r in rows),artifact=a.artifact)
 except Exception as error:result.update(error=repr(error),traceback=traceback.format_exc());raise
 finally:(p/'measure-result.json').write_text(json.dumps(result,indent=2))

@@ -3,7 +3,9 @@ import json,time,traceback,os
 if os.environ.get("RBLN_DEVICES")!="2":raise RuntimeError("This feasibility run requires authorized physical ATOM2")
 class CompileOnlyDone(BaseException):pass
 N=int(os.environ.get('HETERO_COMPILE_BATCH','16'))
-if N not in (12,16):raise ValueError('feasibility compiler supports B12/B16')
+if N not in (8,12,16):raise ValueError('feasibility compiler supports B8/B12/B16')
+projection=os.environ.get('HETERO_FULL_OUTPUT_PROJECTION','0')
+if projection not in ('0','1'):raise ValueError('HETERO_FULL_OUTPUT_PROJECTION must be0 or1')
 from pathlib import Path
 from types import SimpleNamespace
 import numpy as np
@@ -14,7 +16,7 @@ p=Path(os.environ['HETERO_BUILD_DIR']).resolve();p.mkdir(parents=True,exist_ok=F
 from batch_control import assert_atom_idle
 assert_atom_idle(p)
 modeldir=Path('/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678')
-result={'kind':'koni_external_full_decoder','layers':32,'batch':N,'revision':modeldir.name}
+result={'kind':'koni_external_full_decoder','layers':32,'batch':N,'full_output_projection':projection=='1','revision':modeldir.name}
 start=time.time()
 try:
  torch.set_num_threads(8)
@@ -26,7 +28,7 @@ try:
    for key in f.keys():
     if key.startswith('model.layers.') or key in ['model.norm.weight','lm_head.weight']:
      sd[key]=f.get_tensor(key).float().numpy()
- model=ResidentDecode(cfg,sd,512,32,N,wdt=torch.bfloat16).eval();del sd
+ model=ResidentDecode(cfg,sd,512,32,N,wdt=torch.bfloat16).eval();model.full_output_projection=projection=='1';del sd
  model=model.to('rbln:0')
  print('WEIGHTS_READY',flush=True)
  def move(x):return x.to('rbln:0')
