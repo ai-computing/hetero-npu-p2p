@@ -3,7 +3,7 @@
 | 계층 | 현재 구현 | 제한 |
 |---|---|---|
 | 플랫폼 | Linux x86_64, 같은 호스트 | 원격 DMA/Windows 미지원 |
-| source | RNGD1 PE0, 2026.4.0 | 다른 source 경로는 설정 가능하나 실제 장치 검증 필요 |
+| source | RNGD, 2026.4.0; 초기 RNGD1 및 후속 RNGD3 경로 검증 | 다른 source 경로는 설정 가능하나 실제 장치 검증 필요 |
 | destination | ATOM eager exportable allocation, driver3.0.0, 검증 thunk SHA256 | compiled resident allocation, flags 변조 미지원 |
 | 방향 | RNGD가 ATOM-export DMA-BUF에 기록 | RNGD-export → ATOM-import 역방향 금지; 기존 실패 경로를 재시도하지 않음 |
 | planner | 같은 physical format, 4KiB scatter, 64-byte source base alignment | source≤64MiB, ≤512 descriptors, command당≤8 descriptors |
@@ -25,6 +25,6 @@
 
 core/planner/backend는 KONI 가중치나 layer 수를 내장하지 않는다. `TokenMajorLayout`에 실제 cache 수·head 수·context·head dimension을 제공한다. 다른 layout은 별도 planner/adapter를 작성해야 한다.
 
-KONI 예제는 기존 `rngd_pd` 모델 구현과 NumPy/PyTorch/safetensors/Transformers 및 두 vendor의 분리된 Python 환경을 사용한다. source 변환은 custom grouped prefill graph이며 Furiosa NativeLLMEngine에서 직접 얻은 KV라고 표시하지 않는다. 예제의 모델 경로, artifact, tables, reference, Python 실행파일, 포트, ATOM 카드는 JSON 설정이다. 현재 예제의 RNGD source는1번으로 검증 범위를 고정한다.
+KONI 예제는 기존 `rngd_pd` 모델 구현과 NumPy/PyTorch/safetensors/Transformers 및 두 vendor의 분리된 Python 환경을 사용한다. source 변환은 custom grouped prefill graph이며 Furiosa NativeLLMEngine에서 직접 얻은 KV라고 표시하지 않는다. 예제의 모델 경로, artifact, tables, reference, Python 실행파일, 포트, ATOM 카드는 JSON 설정이다. 초기 예제는 RNGD1을 사용했고 후속 iteration 시험은 물리 RNGD3/논리2를 사용했다. 실제 compute 채널과 DMA 장치의 일치를 실행마다 검사한다.
 
 새 SDK/장치 지원은 버전 문자열만 바꾸지 말고 allocation/export ABI, physical layout, 비정렬 source, 모든 CQE, 다음 attention/full-logit 정확도, 정상 종료까지 순서대로 검증한 뒤 추가한다. CPU memfd 테스트 통과를 실제 DMA 성공으로 간주하지 않는다.
