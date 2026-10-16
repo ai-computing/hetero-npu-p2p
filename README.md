@@ -1,89 +1,205 @@
 # hetero-npu-p2p
 
-같은 Linux 호스트의 **RNGD → ATOM KV 전송**을 모델 실행 코드와 분리한 실험용 라이브러리입니다. 전송 계획, 버퍼 소유권, 완료 확인, 물리 KV layout, llm-d stage 연동을 제공합니다. 임의 주소 탐색이나 드라이버 패치를 하지 않습니다.
+**Completion-fenced KV-cache transport for heterogeneous NPUs on the same Linux host.**
 
-**모든 환경에서 동작하는 완성형 런타임은 아닙니다.** 현재 검증 범위는 Furiosa 2026.4.0 / ATOM driver 3.0.0 및 고정 thunk ABI입니다. 모르는 ABI는 거부합니다. 같은 ABI의 다른 장치 경로는 설정 가능하지만 추가 하드웨어 검증이 필요합니다.
+`hetero-npu-p2p` separates peer-to-peer transfer planning, buffer ownership, and decode admission from model execution. Its current hardware backend transfers KV data from a Furiosa RNGD into a Rebellions ATOM-owned DMA-BUF. Experimental serving examples connect this data path to llm-d.
 
-## 현재 성능 판단
+The Python contracts are model-independent. Hardware adapters are version-specific, and the current implementation is a research prototype rather than a general-purpose inference runtime.
 
-초기 B1 비교에서는 PD가 RNGD 단독보다 느렸습니다(기록은 `docs/benchmark/`). 이후 B4 디코드·replica pipeline·긴 prefix 변환을 적용한 별도 연구 시험에서는 입력140–271/출력32·128의 한국어4질의에서 PD가89.65·98.28 tok/s, RNGD 단독이61.56·66.28 tok/s, 제조사 ATOM 단독이40.15·52.26 tok/s였습니다. **PD는3장, 단독은1장**이며 에너지 효율은 ATOM 단독이 더 좋았습니다. 제한된 입력 집합의 결과로 일반적인 품질·성능 우위를 주장하지 않습니다.
+## Features
 
-최적화 경로를 라이브러리로 재실행하는 방법은 [batch pipeline](docs/BATCH_PIPELINE.md)에 있습니다. 하드웨어 검증 기록과 원시 근거를 함께 확인해야 합니다.
+- **Explicit transfer plans:** describe source allocations, destination buffers, and scatter-copy spans.
+- **Completion-fenced admission:** start decode only after all DMA completion entries have been checked.
+- **Buffer lifetime management:** retain allocation owners through transfer and decode; preserve failed leases for diagnosis.
+- **Physical KV layout planning:** construct prefix-copy plans for token-major caches.
+- **Serving primitives:** request validation, capacity control, cache leases, and iteration-level scheduling.
+- **Experimental llm-d integration:** route prefill/decode control requests while KV payloads move through the local P2P path.
+- **Validation tools:** CPU contract tests, hardware compatibility checks, benchmark analysis, and board-energy integration.
 
-## 구조
+## How it works
 
-- `core.py`: source/destination owner 보존, 범위·정렬·FD alias 검사, admission/decode 상태 전이. 실패한 버퍼는 자동 재사용하지 않습니다.
-- `backend.py`, `native/rngd_pdma.c`: RNGD PDMA의 completion-fenced scatter 쓰기. 호스트로 KV payload를 복사하거나 조용히 host-copy로 대체하지 않습니다.
-- `layout.py`: 명시적인 token-major 물리 KV 배치로 prefix 전송 계획 생성. dtype 변환은 모델 adapter가 담당합니다.
-- `atom_experimental.py`: 동일 프로세스의 live allocation trace와 검증된 thunk ABI를 사용하는 export adapter. `experimental=True`가 필요하며 정적 resident cache는 지원하지 않습니다.
-- `llmd.py`: llm-d shared-storage stage 계약용 broker. 요청 ID·모델·prompt fingerprint, 용량, TTL, 순서, 실패 격리를 검사합니다. HTTP에는 요청/응답과 제어 정보만 오가며 KV는 P2P로 이동합니다.
-- `adapters/rngd_dlfloat.py`: BF16 KV를 DLFloat16 carrier로 변환하는 선택적 RNGD adapter와 작은 그래프를 재사용하는 prefix packer.
-- `examples/koni/`: HTTP/llm-d B1 fixture 및 별도의 설정 가능한 B4 batch benchmark. B4는 서로 다른 길이의4개 token prompt를 지원하며 production HTTP batching은 아직 포함하지 않습니다.
+```text
+Prefill model adapter                           Decode model adapter
+        │                                                ▲
+        ▼                                                │
+ RNGD-owned KV ── transfer plan ── RNGD PDMA ──► ATOM-owned KV
+                                      │          DMA-BUF
+                                      ▼
+                              completion check
+                                      │
+                                      └──► decode admission
 
-## 설치와 검사
+llm-d / application: request routing and control
+model adapters: compute, KV representation, and device synchronization
+hetero-npu-p2p: transfer contracts, completion checks, and cache ownership
+```
+
+The destination allocation is exported by ATOM and imported by the RNGD transfer path. This backend does not stage the KV payload through host memory or silently fall back to host copies. Model adapters may still perform representation conversion or use host memory for validation and other work.
+
+## Requirements
+
+| Component | Current requirement or validation scope |
+|---|---|
+| Python | 3.10 or later; core package uses the standard library |
+| Platform | Linux x86-64 for the hardware backend |
+| Topology | Source and destination on the same host; P2P support must be verified on the target system |
+| Source | Furiosa RNGD, driver 2026.4.0 |
+| Destination | Rebellions ATOM, driver 3.0.0, checked thunk-library ABI |
+| Destination memory | Live, exportable eager allocation; static compiled resident caches are not supported by this adapter |
+| Native helper | GCC, matching RNGD driver development headers, and a built liburing library |
+| Model examples | Additional vendor SDKs, model artifacts, and model-specific dependencies |
+
+Version checks reject unknown environments. Matching versions alone do not establish that a device is available or that P2P works on a particular PCIe topology. See [support and ownership contracts](docs/SUPPORT.md).
+
+## Installation
+
+From a checkout of this repository:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
+
+This installs the Python package and the `hetero-p2p` command. It does not install vendor drivers, SDKs, model weights, or the native DMA helper. No package-index installation is assumed.
+
+For hardware transfers, build the helper against the locally installed driver headers and a built liburing tree:
+
+```bash
+python native/build.py \
+  --driver-root /path/to/furiosa-driver-rngd-2026.4.0 \
+  --liburing-root /path/to/liburing-2.6
+```
+
+The build produces `build/rngd-pdma` and its build manifest. Keep them together: the backend checks the helper against the manifest before use.
+
+## Quick start: no NPU required
+
+Run the contract tests on Linux:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+These tests cover transfer bounds, buffer aliasing, ownership transitions, incomplete completions, scheduling, and serving contracts. They use test doubles and host-backed fixtures; passing them does not demonstrate hardware DMA.
+
+The following example exercises a transfer session with a mock backend. It does **not** copy data:
+
+```python
+import os
+
+from hetero_p2p import (
+    CopySession, CopySpan, DestinationAllocation,
+    SourceAllocation, TransferPlan,
+)
+
+class MockBackend:
+    def transfer(self, plan):
+        return {
+            "cqe_result": 0,
+            "completed": plan.commands,
+            "requested": plan.commands,
+            "bytes_requested": plan.bytes,
+        }
+
+fd = os.memfd_create("contract-example")
+os.ftruncate(fd, 4096)
+try:
+    source = SourceAllocation(64, 4096, object(), "example-format")
+    destination = DestinationAllocation(fd, object(), "example-format")
+    plan = TransferPlan(
+        source, (destination,), (CopySpan(0, 0, 0, 4096),),
+        descriptors_per_command=1,
+    )
+    session = CopySession(MockBackend())
+    session.admit("request-1", plan, notify=lambda: None)
+    session.start_decode("request-1")
+    # A real integration must wait for device decode completion here.
+    session.finish_decode("request-1", passed=True)
+    assert session.state == "idle"
+finally:
+    os.close(fd)
+```
+
+The synthetic address, host file descriptor, and placeholder owners above are valid only for this mock example. Hardware transfers require addresses and exported descriptors obtained from live SDK allocations.
+
+## Hardware integration
+
+Check the installed environment, using the intended physical device path:
+
+```bash
+hetero-p2p doctor --device /dev/rngd/npu3ch0
+```
+
+`doctor` checks versions, ABI, and device-file compatibility. It does not reserve the device or execute a P2P transfer.
+
+To integrate a model:
+
+1. Create and synchronize the source KV allocation through its SDK.
+2. Export a supported destination allocation and retain its owning SDK objects.
+3. Describe the actual physical format with a `TransferPlan` or `TokenMajorLayout`.
+4. Create a `CopySession` using `RngdPdmaBackend(helper, device=...)` on the owning process's main thread.
+5. Admit the request, run decode after verified transfer completion, and release the lease only after verified decode completion.
+
+The backend's device path must match the source allocation. A source address is a raw RNGD DRAM offset, not a CPU pointer. Do not manually close exported descriptors or release SDK allocations while a session owns them. Failed or uncertain transfers poison the session rather than recycling the destination.
+
+See [library API and serving contracts](docs/SERVING_LIBRARY.md), [support details](docs/SUPPORT.md), and [hardware validation](docs/VALIDATION.md).
+
+## llm-d and model examples
+
+The llm-d integration implements a local prefill/decode stage contract. HTTP carries requests and control information; the owner processes manage KV transfer and cache leases. This is not a NIXL/Mooncake connector or a cross-node RDMA transport.
+
+The `examples/koni/` directory contains model-specific research examples for KONI-Llama3.1-8B. They require additional model code, compiled artifacts, and separate vendor environments. They are not a turnkey service installed by `pip`.
+
+Start with:
+
+- [llm-d integration](docs/LLMD.md)
+- [HTTP batching setup](docs/HTTP_BATCHING.md)
+- [Example configuration](examples/koni/serve.config.example.json)
+- [Iteration scheduling](docs/ITERATION_SERVING_KO.md)
+- [Independent decode replicas](docs/ITERATION_REPLICAS_KO.md)
+
+Compiled B4/B8 examples and opt-in B12/B14 paths have been exercised. Batch size and context length depend on the compiled artifact and available memory; they are not interchangeable runtime switches.
+
+## Benchmarks
+
+Performance depends on model, batch occupancy, input/output lengths, request arrivals, and hardware allocation. The repository preserves workload-specific results, including regressions and failed experiments.
+
+| Evaluation | Evidence |
+|---|---|
+| Same-batch host-admitted vs P2P output validation | [Validation record](docs/VALIDATION.md) |
+| Batch-width scaling | [B8 results](docs/PD_B8_RESULTS_KO.md), [B12 results](docs/PD_B12_RESULTS_KO.md) |
+| B14/context448, saturation and mixed workloads | [Results and limitations](docs/B14_CONTEXT448_KO.md) |
+| Scheduling policies and research basis | [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
+| Memory constraints and unsuccessful configurations | [B16 feasibility](docs/B16_FEASIBILITY_KO.md) |
+
+Transport output agreement is not proof of model-quality equivalence. PD throughput is not necessarily better than standalone inference, and a throughput gain need not improve latency or energy efficiency. Raw local runs, model weights, and compiled artifacts may be excluded from Git; checked-in summaries identify their provenance and limitations.
+
+## Limitations
+
+- Hardware support is limited to the validated adapter/ABI combination and transfer direction.
+- Other models require compatible allocation, layout, conversion, and synchronization adapters.
+- Multi-node transport, full Kubernetes/EPP/Envoy deployment, general sampling, and production token streaming are outside the validated examples.
+- Forced process termination or device reset during DMA is not a supported recovery mechanism.
+- Board-power integration excludes host CPU/DRAM and does not establish wall-plug efficiency or MFU.
+
+## Development
 
 ```bash
 python -m pip install -e .
-python native/build.py --liburing-root /path/to/liburing-2.6
-hetero-p2p doctor --device /dev/rngd/npu1ch0
-PYTHONPATH=src python -m unittest discover -s tests -v
-python tests/native_rejection.py
+python -m unittest discover -s tests -v
 ```
 
-빌드에는 GCC, Furiosa2026.4.0 드라이버 개발 헤더, 빌드된 liburing이 필요합니다. Python core는 표준 라이브러리만 사용합니다. wheel에는 proprietary SDK, 드라이버 헤더, 모델 가중치, C 실행파일을 포함하지 않습니다. C helper는 검증된 로컬 드라이버 헤더로 별도 빌드합니다.
+For changes to hardware adapters, also verify actual allocation/export behavior, physical layout, completion handling, output correctness, and clean shutdown on the target hardware. Preserve failed runs and record SDK versions, source revisions, and measurement conditions.
 
-`doctor`는 버전/ABI/장치 파일 호환성 검사입니다. 장치가 비었거나 실제 PCIe P2P가 성공함을 보증하는 시험은 아닙니다.
+| Directory | Contents |
+|---|---|
+| `src/hetero_p2p/` | Python transport, layout, scheduling, and serving contracts |
+| `native/` | RNGD PDMA helper and build script |
+| `examples/koni/` | Model-specific integration and benchmark tools |
+| `tests/` | CPU contract tests and native validation utilities |
+| `docs/` | API guidance, experiment reports, and support boundaries |
 
-## 최소 사용 형태
+## License
 
-```python
-from hetero_p2p import (SourceAllocation, DestinationAllocation, CopySpan,
-                        TransferPlan, CopySession, RngdPdmaBackend)
-
-# raw_dram_offset, dma_buf_fd는 살아 있는 SDK 소유 객체에서 얻어야 합니다.
-source = SourceAllocation(raw_dram_offset, source_bytes, source_owner,
-                          "dlfloat16-token-major-v1", "/dev/rngd/npu1ch0")
-destination = DestinationAllocation(dma_buf_fd, destination_owner,
-                                     "dlfloat16-token-major-v1")
-plan = TransferPlan(source, (destination,),
-                    (CopySpan(0, 0, 0, 4096),), descriptors_per_command=1)
-session = CopySession(RngdPdmaBackend("build/rngd-pdma"))
-session.admit(request_id, plan, notify_destination_cache_updated)
-session.start_decode(request_id)
-# 실제 decode를 끝내고 정확도/상태를 확인한 뒤:
-session.finish_decode(request_id, passed=True)
-```
-
-주소와 크기는 예제 값으로 추측해서 넣지 마세요. Source는 raw RNGD DRAM offset이며 CPU 주소가 아닙니다. destination은 ATOM이 소유한 exportable eager allocation의 DMA-BUF입니다. source와 모든 destination owner는 완료와 decode까지 유지해야 하며, FD를 수동으로 닫거나 소유 객체를 해제하면 안 됩니다. `CopySession`은 자신의 참조를 보존하지만 외부 코드의 잘못된 수동 해제를 방지할 수는 없습니다.
-
-## llm-d 연결
-
-[llm-d 연동 문서](docs/LLMD.md), [지원 범위](docs/SUPPORT.md), [검증 기록](docs/VALIDATION.md)을 참고하세요. 이 구현은 llm-d를 KV 복사 경로로 사용하지 않습니다. llm-d shared-storage 계약으로 prefill→decode를 호출하고, 같은 노드의 owner 프로세스가 DMA와 cache lease를 관리합니다.
-
-이 프로젝트는 NIXL/Mooncake connector나 원격 노드 RDMA 구현이 아닙니다. Kubernetes 배포, 토큰 streaming, chat template, 자동 모델 컴파일, 일반 모델의 production serving은 현재 검증 예제의 범위 밖입니다.
-
-Git 저장소는 로컬에 생성했습니다. 원격 저장소 생성·push·공개 배포는 하지 않았으며 배포 라이선스는 별도 결정이 필요합니다.
-
-## HTTP microbatch validation (v0.3.0)
-
-The experimental KONI server now batches concurrent llm-d requests across two ATOM B4 replicas. Three repeated HTTP trials delivered median 87.93 tok/s (32 output tokens) and 100.67 tok/s (128) for 16-request bursts. All 177 requests matched full same-B4 host-admitted logits. Mixed lengths and partial batches remain slower; this is not a universal latency or energy win. See [results and limitations](docs/HTTP_RESULTS_KO.md) and [run instructions](docs/HTTP_BATCHING.md).
-
-## Length-aware serving (v0.4.0, experimental)
-
-A separate source-staged server selects similar output limits before ATOM admission and can reply early while retaining the whole replica lease. In a controlled32-request mixed-length comparison, median throughput increased from65.84 to74.76 tok/s; all334 validation requests matched full host-admitted logits. Early reply alone gave the lowest median latency for32-token outputs. See [results and tradeoffs](docs/LENGTH_RESULTS_KO.md) and [reproduction](docs/LENGTH_SCHEDULING.md).
-
-## B8 PD and serving contracts (v0.5.0)
-
-The KONI HTTP example now supports compiled B4/B8 widths with a shared worker and validated compute-to-DMA device binding. On the same RNGD+two-ATOM hardware, B8 reached134.83/176.50/127.47 tok/s for fixed32, fixed128 and mixed-length bursts, versus B4's85.66/100.52/93.10. Final comparison424 requests matched full host-admitted logits. Small partial batches remain slower on B8. See [results](docs/PD_B8_RESULTS_KO.md), [library API and deployment scope](docs/SERVING_LIBRARY.md), and [example config](examples/koni/serve.config.example.json).
-
-## Fenced iteration refill (experimental)
-
-A separate one-ATOM KONI server can replace completed slots after synchronized decode quanta while preserving ongoing trajectories. In 410 fully validated requests, mixed-burst median throughput rose from73.49 to79.50 tok/s and overall median response time fell from20.52 to16.74 seconds; 128-token requests became slower and uniform-length throughput did not improve. This remains an opt-in experiment. See [implementation, evidence and limitations](docs/ITERATION_SERVING_KO.md) and [research log](docs/OPTIMIZATION_RESEARCH_KO.md).
-
-## Adaptive iteration quantum (experimental)
-
-The separate iteration server now defaults to 4 steps with empty slots and 128 with a full batch. In a controlled delayed-arrival test, median scenario throughput increased39.51→56.89 tok/s and short-request latency fell10.71→4.77 seconds, with a0.65-second cost to the initial long request. Saturated throughput stayed near94 tok/s. All304 requests passed full-logit and lease checks. See [conditions and limitations](docs/ADAPTIVE_QUANTUM_KO.md).
-
-## Independent iteration replicas (experimental)
-
-The iteration example supports ATOM2/3 independently, with collection of new partial batches before dispatch. In the final two-ATOM comparison, sealed batches reached136.35/177.73 tok/s for fixed32/fixed128. Mixed throughput was147.01 sealed versus117.31 with refill, so two-ATOM startup defaults to sealed; refill remains an explicit option. Single-ATOM startup keeps adaptive refill. All848 requests across exploratory and final runs matched full logits. See [results, retained failures and limitations](docs/ITERATION_REPLICAS_KO.md).
+A project license has not yet been declared in a `LICENSE` file. Public repository access does not by itself grant an open-source license. Vendor SDKs, driver components, and model artifacts remain subject to their respective terms.
