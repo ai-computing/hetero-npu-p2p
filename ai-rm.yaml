@@ -1,4 +1,5 @@
 name: hetero-npu-p2p
+protocol: "0.1"
 layer: l2-memory
 kind: library
 summary: 같은 호스트의 RNGD→ATOM NPU 간 완료 확인형 KV cache P2P 전송 라이브러리
@@ -8,12 +9,17 @@ install:
   - python -m pip install -e .
 test:
   - python -m unittest discover -s tests
+adapters:
+  - group: airm.kv_transports
+    name: p2p                 # hetero_p2p.airm:P2PTransport
 deploy:
-  target: none                # 라이브러리. llm-d 연결은 로컬 stage 예제(examples/koni)뿐
+  target: none                # 서빙 pod 안의 라이브러리. llm-d 연결은 로컬 stage 예제(examples/koni)뿐
+  chart: null
   manifests: null
   image: null
+metrics: [kv_transfer_ms, kv_transfer_gbps]
 config:
-  env_example: null           # 사이트 값은 examples/koni/*.example.json 설정 파일로 받는다
+  env_example: null           # 사이트 값 없음. 경로는 HETERO_P2P_HELPER/HETERO_P2P_DEVICE, 모델 예제는 examples/koni/*.example.json
 interfaces:
   provides: [KVTransport]
   uses: []

@@ -225,11 +225,34 @@ python -m unittest discover -s tests
 **인터페이스**: provides `KVTransport`(`TransferPlan`/`CopySession`/`RngdPdmaBackend`, llm-d stage broker).
 다른 ai-rm 구성요소를 사용하지 않는다. KONI 예제는 모델 실행에 `rngd-pd`의 `rngd_pd` 패키지를 `PYTHONPATH`로 불러온다.
 
+**ai-rm protocol v0.1 adapter**: `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` 이름 `p2p`.
+기존 `TokenMajorLayout.prefix_plan`과 `RngdPdmaBackend.transfer`(모든 CQE 확인 후 반환)를 감쌀 뿐이며 host staging으로 대체하지 않는다.
+
+- `supports`: 같은 노드의 `furiosa` 장치 메모리 → `rebellions` 장치 메모리(`device-hbm`/`device-dram`)만 True.
+- `plan`: `dlfloat16` token-major 동일 layout, prefix 구간 `[0, end)`만 허용. rm-core 계획에는 실제 할당이 없으므로
+  소유 프로세스가 먼저 `bind(request_id, P2PBinding(source, destinations, mappings, context, slot, batch))`로
+  살아 있는 RNGD source와 ATOM export를 넘긴다. 범위·정렬·형식 오류는 `TransportError`.
+- `submit`/`wait`: `submit`이 helper를 동기 실행해 완료 fence 이후 결과를 남기고, `wait`가 그 결과를 한 번만 돌려준다.
+  `submit`은 소유 프로세스의 main thread에서 호출한다. 실패는 `ok=False`(재시도·우회 없음). binding은 한 번의 `plan`에서 소비된다. 성공마다 `kv_transfer_ms`, `kv_transfer_gbps`(tag `kv_transport=p2p`)를
+  `transport.measurements`와 `metric_sink`로 낸다.
+- 생성자 키워드: `helper`, `device`, `backend`, `metric_sink`. 환경 변수: `HETERO_P2P_HELPER`(빌드한 `rngd-pdma` 경로),
+  `HETERO_P2P_DEVICE`(기본 `/dev/rngd/npu1ch0`), `HETERO_P2P_CONFORMANCE_FIXTURE`(`module:callable`, 아래).
+- llm-d stage: `StageBroker(..., kv_transport='p2p')`가 경로 이름을 받고(`/health`에 표시), 소유 프로세스는
+  `hetero_p2p.llmd.load_kv_transport(name, **kwargs)`로 이름에서 구현을 불러온다.
+
+```bash
+python -m rm_core.conformance airm.kv_transports p2p
+```
+
+`conformance_case()`는 환경 검사(`probe`)와 helper가 맞고, `HETERO_P2P_CONFORMANCE_FIXTURE`가 가리키는 callable이
+`(src_tier, dst_tier, layout, P2PBinding)`을 돌려줄 때만 실제 tier로 시험한다. 그렇지 않으면 이유와 함께 SKIP이다.
+fixture는 모델 SDK로 살아 있는 할당을 만들고 시험 동안 소유한다(`examples/koni/serve.py`의 준비 과정 참고).
+
 **지원 KPI**: 이종자원수(RNGD+ATOM 동시 사용), 전력효율(`hetero_p2p.energy`의 HTTP 구간 보드 에너지 적분).
 보드 전력만 포함하므로 wall-plug 효율이나 MFU를 산출하지 않는다.
 
 **`cluster.local.env` 변수**: 없다. 엔드포인트·IP를 코드에 두지 않으며, 모델·SDK·아티팩트 경로는
-`examples/koni/*.example.json`을 복사한 설정 파일로 전달한다.
+`examples/koni/*.example.json`을 복사한 설정 파일로 전달한다. adapter의 `HETERO_P2P_*`는 로컬 경로일 뿐 사이트 값이 아니다.
 
 ## License
 

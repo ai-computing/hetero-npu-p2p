@@ -1,11 +1,18 @@
 """llm-d shared-storage control-plane adapter. KV bytes never pass through HTTP.
 
 Call engine callbacks via an owning process when using the PDMA backend.
-This module does not pretend to implement NIXL or Mooncake.
+This module does not pretend to implement NIXL or Mooncake. The KV path is chosen by its
+ai-rm `airm.kv_transports` entry-point name (default `p2p`), never by a hard-coded import.
 """
 from dataclasses import dataclass
 import hashlib,json,threading,time
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
+
+
+def load_kv_transport(name='p2p',**kwargs):
+    """Instantiate the KV transport registered under `name` (rm-core PROTOCOL §5.3)."""
+    from rm_core import registry
+    return registry.load('airm.kv_transports',name,**kwargs)
 
 
 class StageError(Exception):
@@ -36,8 +43,10 @@ class Entry:
 
 
 class StageBroker:
-    def __init__(self,model,prepare,decode,discard,*,capacity=2,ttl=60,context=512,event_sink=None):
+    def __init__(self,model,prepare,decode,discard,*,capacity=2,ttl=60,context=512,event_sink=None,kv_transport='p2p'):
         if capacity<1 or ttl<=0:raise ValueError('positive capacity and TTL required')
+        if not isinstance(kv_transport,str) or not kv_transport:raise ValueError('KV transport name required')
+        self.kv_transport=kv_transport  # owners load it with load_kv_transport(broker.kv_transport, ...)
         self.model,self.prepare,self.decode,self.discard=model,prepare,decode,discard
         self.capacity,self.ttl,self.context=capacity,ttl,context
         self.entries={};self.lock=threading.RLock();self.event_sink=event_sink or (lambda row:None)
@@ -115,7 +124,7 @@ def serve_stage(broker,stage,port):
             data=json.dumps(payload).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data)
         def do_GET(self):
             if self.path not in ('/health','/ready'):self.reply(404,{'error':'not found'});return
-            self.reply(200,{'ready':True,'stage':stage})
+            self.reply(200,{'ready':True,'stage':stage,'kv_transport':broker.kv_transport})
         def do_POST(self):
             if self.path!='/v1/completions':self.reply(404,{'error':'only /v1/completions supported'});return
             try:
