@@ -225,7 +225,8 @@ See [library API and serving contracts](docs/SERVING_LIBRARY.md), [support detai
 
 The llm-d integration implements a local prefill/decode stage contract. HTTP carries requests and control
 information; the owner processes manage KV transfer and cache leases. This is not a NIXL/Mooncake connector or a
-cross-node RDMA transport.
+cross-node RDMA transport; the transfer itself is also available to NIXL clients through the `HETERO_NPU` backend
+plugin ([NIXL backend](docs/nixl-backend.md)).
 
 The `examples/koni/` directory contains model-specific research examples for KONI-Llama3.1-8B. They require
 additional model code, compiled artifacts and separate vendor environments. They are not a turnkey service installed
@@ -249,6 +250,7 @@ compiled artifact and available memory; they are not interchangeable runtime swi
 | **Provides** | `KVTransport` (`TransferPlan` / `CopySession` / `RngdPdmaBackend`, llm-d stage broker) |
 | **Uses** | No other ai-rm component. The KONI examples load the `rngd_pd` package from `rngd-pd` through `PYTHONPATH` for model execution |
 | **Adapter** | `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` name `p2p` |
+| **NIXL backend** | `HETERO_NPU` plugin (`nixl_plugin/`, `libplugin_HETERO_NPU.so`): RNGD → ATOM DMA-BUF through `nixl_agent` ([design](docs/nixl-backend.md)) |
 | **Metrics** | `kv_transfer_ms`, `kv_transfer_gbps` (tag `kv_transport=p2p`) |
 | **KPIs** | Heterogeneous resource count (RNGD + ATOM together); power efficiency (board energy integrated over HTTP intervals by `hetero_p2p.energy`) |
 | **Site config** | None. No endpoints or IPs in code; model, SDK and artifact paths come from config files copied from `examples/koni/*.example.json` |
@@ -333,6 +335,37 @@ standalone inference, and a throughput gain need not improve latency or energy e
 workload-specific results, including regressions and failed experiments; raw local runs, model weights and compiled
 artifacts may be excluded from Git, and checked-in summaries identify their provenance and limitations.
 
+### RNGD → ATOM transfer-time curve (existing path vs NIXL backend)
+
+RNGD PE0 → ATOM on one host, flat byte buffers, median of 5 transfers per cell, timed from post to the completion
+fence (every CQE reaped). GB/s = 10⁹ bytes/s. Every cell was checked byte-exact on ATOM: the destination is poisoned
+first, then must hold the source pattern, with bytes past the range untouched. 2026-10-19, NIXL 1.5.0 (pip wheel);
+raw data in [`docs/nixl/`](docs/nixl/curve-20261019.json), method in [NIXL backend](docs/nixl-backend.md).
+
+| Size (GiB) | Existing path (helper, 64 MiB per call) | NIXL qd 1 | NIXL qd 4 | NIXL qd 8 | NIXL 32 layers, qd 4: first layer / all | RNGD → host leg (staged) |
+|---|---:|---:|---:|---:|---:|---:|
+| 0.1 (104 MiB) | 16.0 ms · 6.8 GB/s | 3.2 ms · 33.7 | 2.6 ms · 41.4 | 2.7 ms · 41.1 | 0.32 / 2.7 ms | 27.1 ms · 4.0 |
+| 0.25 | 13.2 ms · 20.3 | 8.2 ms · 32.5 | 6.5 ms · 41.6 | 6.4 ms · 41.7 | 0.81 / 6.5 ms | 33.0 ms · 8.1 |
+| 0.5 | 31.9 ms · 16.8 | 16.2 ms · 33.1 | 12.9 ms · 41.7 | 12.9 ms · 41.7 | 1.57 / 12.9 ms | 54.0 ms · 9.9 |
+| 1 | 64.0 ms · 16.8 | 33.7 ms · 31.9 | 25.7 ms · 41.9 | 25.6 ms · 41.9 | 1.64 / 25.7 ms | 95.5 ms · 11.2 |
+| 2 | 133.3 ms · 16.1 | 70.3 ms · 30.6 | 51.8 ms · 41.5 | 51.7 ms · 41.5 | 1.71 / 51.3 ms | 157.2 ms · 13.7 |
+| 4 | 276.3 ms · 15.5 | 140.2 ms · 30.6 | 103.9 ms · 41.3 | 102.6 ms · 41.9 | 3.32 / 103.2 ms | 334.3 ms · 12.8 |
+
+- The NIXL backend issues the same PDMA DMA-BUF command as the helper. At queue depth 1 it is about 2× the helper
+  (one request instead of one helper process per 64 MiB); at queue depth 4 it holds about 41.5 GB/s from 0.1 to 4 GiB,
+  and depth 8 adds nothing.
+- Layer-wise ([aicomp#47](https://github.com/ai-computing/aicomp/issues/47)): 32 per-layer requests take as long as
+  one request in total, and layers reach their fences in order. The first fence comes after roughly
+  max(layer size, queue depth × 16 MiB) / bandwidth — 3.3 ms of 103 ms at 4 GiB (qd 1: 4.0 ms; qd 8: 3.4 ms). If
+  prefill produces layers no faster than they transfer, about one layer of transfer stays exposed after prefill instead
+  of the whole buffer. TTFT is not measured here.
+- Staged comparison: the RNGD → host leg alone (PDMA into pinned host pages) runs at 11–14 GB/s from 1 GiB up, before
+  any host → ATOM copy (the ATOM SDK copy of 4 GiB from host took about 0.8 s here, host buffer creation included).
+- The helper and staged columns vary between runs at ≤ 0.25 GiB (an earlier run: helper 13.7 / 17.7 GB/s, staged
+  18.5 / 11.7 GB/s at 0.1 / 0.25 GiB, [`run1`](docs/nixl/curve-20261019-run1.json)); the NIXL columns agree within 1%.
+- 4 GiB uses two 2 GiB allocations per side (neither SDK allocates a single tensor of 4 GiB). This checks bytes, not
+  tokens; a KONI token-exact run through NIXL needs the engine hook ([aicomp#48](https://github.com/ai-computing/aicomp/issues/48)).
+
 | Evaluation | Evidence |
 |---|---|
 | Same-batch host-admitted vs P2P output validation | [Validation record](docs/VALIDATION.md) |
@@ -341,6 +374,7 @@ artifacts may be excluded from Git, and checked-in summaries identify their prov
 | B14/context448, saturation and mixed workloads | [Results and limitations](docs/B14_CONTEXT448_KO.md) |
 | Scheduling policies and research basis | [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | Memory constraints and unsuccessful configurations | [B16 feasibility](docs/B16_FEASIBILITY_KO.md) |
+| RNGD → ATOM through NIXL, 0.1–4 GiB curve | [NIXL backend](docs/nixl-backend.md), [raw data](docs/nixl/curve-20261019.json) |
 
 ## ⚠️ Limitations
 
@@ -365,6 +399,8 @@ source revisions and measurement conditions.
 |---|---|
 | `src/hetero_p2p/` | Python transport, layout, scheduling and serving contracts |
 | `native/` | RNGD PDMA helper and build script |
+| `nixl_plugin/` | `HETERO_NPU` NIXL backend plugin (C++, meson) |
+| `examples/nixl/` | NIXL transfer benchmark and ATOM export owner |
 | `examples/koni/` | Model-specific integration and benchmark tools |
 | `tests/` | CPU contract tests and native validation utilities |
 | `docs/` | API guidance, experiment reports and support boundaries |
@@ -375,6 +411,7 @@ source revisions and measurement conditions.
 |---|---|
 | 🔧 **Use the library** | [Serving library API](docs/SERVING_LIBRARY.md) · [Support and ownership](docs/SUPPORT.md) · [Batch pipeline](docs/BATCH_PIPELINE.md) |
 | 🔌 **Connect to llm-d** | [llm-d integration](docs/LLMD.md) · [HTTP batching](docs/HTTP_BATCHING.md) · [Length scheduling](docs/LENGTH_SCHEDULING.md) |
+| 🔁 **Use from NIXL** | [HETERO_NPU NIXL backend](docs/nixl-backend.md) |
 | 📊 **Check the evidence** | [Validation](docs/VALIDATION.md) · [Benchmarks](docs/benchmark-b4/RESULTS_KO.md) · [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | 🧭 **ai-rm context** | [ai-rm](https://github.com/ai-computing/ai-rm) · [Optimus Prime consolidation plan](https://github.com/ai-computing/ai-rm/blob/master/docs/engine-integration.md) · [rm-core protocol](https://github.com/ai-computing/rm-core/blob/main/PROTOCOL.md) |
 
