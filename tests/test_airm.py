@@ -1,8 +1,8 @@
-import os,sys,types,unittest
+import contextlib,io,os,runpy,unittest
 from unittest import mock
 try:
-    from rm_core import KVLayout,MemoryTier,TransportError,registry
-    from rm_core.conformance import NoHardware,check_kv_transport
+    from rm_core import KVLayout,MemoryTier,NoHardware,TransportError,registry
+    from rm_core.conformance import check_kv_transport
     from hetero_p2p.airm import P2PBinding,P2PTransport
     from hetero_p2p.core import SourceAllocation,DestinationAllocation
     from hetero_p2p.llmd import StageBroker,load_kv_transport
@@ -90,13 +90,14 @@ class P2PTransportTests(unittest.TestCase):
         with self.assertRaisesRegex(TransportError,'HETERO_P2P_HELPER'):t.submit(p)
         t._backend=self.backend;self.assertTrue(t.wait(t.submit(p),1.0).ok)
     def test_no_hardware_matches_cli_main_module(self):
-        # `python -m rm_core.conformance` catches its own __main__.NoHardware class.
-        main=types.ModuleType('__main__');main.__spec__=types.SimpleNamespace(name='rm_core.conformance')
-        class MainNoHardware(RuntimeError):pass
-        main.NoHardware=MainNoHardware
-        with mock.patch.dict(sys.modules,{'__main__':main}),mock.patch('hetero_p2p.airm.probe',return_value=dict(supported=False,checks={'device_path':False})):
-            with self.assertRaises(MainNoHardware) as cm:self.t.conformance_case()
-        self.assertIsInstance(cm.exception,NoHardware)
+        # `python -m rm_core.conformance` re-executes that module; since rm-core 0.1.1 it shares
+        # rm_core.errors.NoHardware, so the CLI reports SKIP instead of FAIL.
+        cli=runpy.run_module('rm_core.conformance',run_name='rm_core_conformance_cli');out=io.StringIO()
+        with mock.patch.object(registry,'load',return_value=self.t),contextlib.redirect_stdout(out),\
+             mock.patch('hetero_p2p.airm.probe',return_value=dict(supported=False,checks={'device_path':False})):
+            self.assertEqual(cli['main'](['airm.kv_transports','p2p']),0)
+        self.assertIs(cli['NoHardware'],NoHardware)
+        self.assertRegex(out.getvalue(),r'^SKIP  airm.kv_transports:p2p: .*device_path')
     @unittest.skipUnless('p2p' in (registry.available('airm.kv_transports') if P2PTransport else {}),'package not installed')
     def test_entry_point_resolves(self):
         self.assertIsInstance(load_kv_transport('p2p'),P2PTransport)
