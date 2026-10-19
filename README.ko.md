@@ -219,7 +219,8 @@ hetero-p2p doctor --device /dev/rngd/npu3ch0
 <br>
 
 llm-d 연동은 로컬 prefill/decode stage 계약을 구현한다. HTTP는 요청과 제어 정보를 나르고, 소유 프로세스가 KV
-전송과 cache lease를 관리한다. NIXL/Mooncake connector나 노드 간 RDMA 전송이 아니다.
+전송과 cache lease를 관리한다. NIXL/Mooncake connector나 노드 간 RDMA 전송이 아니다. 다만 전송 자체는 `HETERO_NPU`
+백엔드 plugin으로 NIXL 클라이언트에서도 쓸 수 있다([NIXL 백엔드](docs/nixl-backend.ko.md)).
 
 `examples/koni/`에는 KONI-Llama3.1-8B용 모델별 연구 예제가 있다. 추가 모델 코드, 컴파일된 아티팩트, 별도 vendor
 환경이 필요하며 `pip`로 설치되는 완성형 서비스가 아니다.
@@ -242,6 +243,7 @@ llm-d 연동은 로컬 prefill/decode stage 계약을 구현한다. HTTP는 요�
 | **제공** | `KVTransport` (`TransferPlan` / `CopySession` / `RngdPdmaBackend`, llm-d stage broker) |
 | **사용** | 다른 ai-rm 구성요소를 쓰지 않는다. KONI 예제는 모델 실행에 `rngd-pd`의 `rngd_pd` 패키지를 `PYTHONPATH`로 불러온다 |
 | **Adapter** | `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` 이름 `p2p` |
+| **NIXL 백엔드** | `HETERO_NPU` plugin(`nixl_plugin/`, `libplugin_HETERO_NPU.so`): `nixl_agent`로 RNGD → ATOM DMA-BUF 전송([설계](docs/nixl-backend.ko.md)) |
 | **지표** | `kv_transfer_ms`, `kv_transfer_gbps` (tag `kv_transport=p2p`) |
 | **KPI** | 이종자원수(RNGD+ATOM 동시 사용), 전력효율(`hetero_p2p.energy`의 HTTP 구간 보드 에너지 적분) |
 | **사이트 설정** | 없다. 엔드포인트·IP를 코드에 두지 않으며, 모델·SDK·아티팩트 경로는 `examples/koni/*.example.json`을 복사한 설정 파일로 전달한다 |
@@ -321,6 +323,35 @@ KONI-Llama3.1-8B, context 512, 입력 140/167/227/271토큰, 출력 길이 고�
 개선을 뜻하지도 않는다. 저장소는 회귀와 실패한 실험을 포함한 워크로드별 결과를 보존한다. 로컬 원시 결과, 모델
 가중치, 컴파일된 아티팩트는 Git에서 제외될 수 있으며, 커밋된 요약에 출처와 한계를 적었다.
 
+### RNGD → ATOM 전송 시간 곡선 (기존 경로 대 NIXL 백엔드)
+
+한 호스트의 RNGD PE0 → ATOM, 평면 바이트 버퍼, 칸마다 5회 전송의 중앙값이며, 전송 시작부터 완료 fence(모든 CQE
+회수)까지 쟀다. GB/s = 10⁹ bytes/s. 모든 칸을 ATOM에서 바이트 단위로 검증했다: destination을 먼저 poison 값으로 채우고,
+전송 후 source 패턴과 같아야 하며 범위 밖 바이트는 그대로여야 한다. 2026-10-19, NIXL 1.5.0(pip wheel).
+원자료는 [`docs/nixl/`](docs/nixl/curve-20261019.json), 방법은 [NIXL 백엔드](docs/nixl-backend.ko.md).
+
+| 크기 (GiB) | 기존 경로 (helper, 호출당 64 MiB) | NIXL qd 1 | NIXL qd 4 | NIXL qd 8 | NIXL 32 layer, qd 4: 첫 layer / 전체 | RNGD → 호스트 구간 (staging) |
+|---|---:|---:|---:|---:|---:|---:|
+| 0.1 (104 MiB) | 16.0 ms · 6.8 GB/s | 3.2 ms · 33.7 | 2.6 ms · 41.4 | 2.7 ms · 41.1 | 0.32 / 2.7 ms | 27.1 ms · 4.0 |
+| 0.25 | 13.2 ms · 20.3 | 8.2 ms · 32.5 | 6.5 ms · 41.6 | 6.4 ms · 41.7 | 0.81 / 6.5 ms | 33.0 ms · 8.1 |
+| 0.5 | 31.9 ms · 16.8 | 16.2 ms · 33.1 | 12.9 ms · 41.7 | 12.9 ms · 41.7 | 1.57 / 12.9 ms | 54.0 ms · 9.9 |
+| 1 | 64.0 ms · 16.8 | 33.7 ms · 31.9 | 25.7 ms · 41.9 | 25.6 ms · 41.9 | 1.64 / 25.7 ms | 95.5 ms · 11.2 |
+| 2 | 133.3 ms · 16.1 | 70.3 ms · 30.6 | 51.8 ms · 41.5 | 51.7 ms · 41.5 | 1.71 / 51.3 ms | 157.2 ms · 13.7 |
+| 4 | 276.3 ms · 15.5 | 140.2 ms · 30.6 | 103.9 ms · 41.3 | 102.6 ms · 41.9 | 3.32 / 103.2 ms | 334.3 ms · 12.8 |
+
+- NIXL 백엔드는 helper와 같은 PDMA DMA-BUF 명령을 낸다. 큐 깊이 1에서 helper의 약 2배다(64 MiB마다 helper
+  프로세스 하나 대신 요청 하나). 큐 깊이 4에서 0.1–4 GiB 전 구간 약 41.5 GB/s를 유지하고, 깊이 8은 더 빨라지지 않는다.
+- Layer-wise([aicomp#47](https://github.com/ai-computing/aicomp/issues/47)): layer별 요청 32개의 총시간은 요청 하나와
+  같고, layer는 순서대로 fence에 도달한다. 첫 fence는 대략 max(layer 크기, 큐 깊이 × 16 MiB) / 대역폭 뒤에 온다 —
+  4 GiB에서 103 ms 중 3.3 ms(qd 1: 4.0 ms, qd 8: 3.4 ms). prefill이 layer를 전송보다 빠르지 않게 만든다면, prefill
+  뒤에 드러나는 전송은 버퍼 전체가 아니라 layer 하나 정도다. TTFT는 여기서 재지 않았다.
+- staging 비교: RNGD → 호스트 구간만으로도(pin된 호스트 페이지로의 PDMA) 1 GiB 이상에서 11–14 GB/s이며, 호스트 →
+  ATOM 복사는 아직 포함하지 않은 값이다(이 노드에서 ATOM SDK의 4 GiB 호스트 → 장치 복사는 호스트 버퍼 생성 포함 약 0.8 s).
+- helper와 staging 열은 0.25 GiB 이하에서 실행마다 다르다(앞선 실행: 0.1 / 0.25 GiB에서 helper 13.7 / 17.7 GB/s,
+  staging 18.5 / 11.7 GB/s, [`run1`](docs/nixl/curve-20261019-run1.json)). NIXL 열은 1% 이내로 같다.
+- 4 GiB는 양쪽 모두 2 GiB allocation 두 개를 쓴다(두 SDK 모두 4 GiB 단일 tensor를 할당하지 못한다). 이 측정은
+  토큰이 아니라 바이트를 확인한다. NIXL을 거친 KONI token-exact 실행에는 엔진 훅([aicomp#48](https://github.com/ai-computing/aicomp/issues/48))이 필요하다.
+
 | 평가 | 근거 |
 |---|---|
 | 같은 batch host admission 대 P2P 출력 검증 | [검증 기록](docs/VALIDATION.md) |
@@ -329,6 +360,7 @@ KONI-Llama3.1-8B, context 512, 입력 140/167/227/271토큰, 출력 길이 고�
 | B14/context448, 포화와 혼합 워크로드 | [결과와 한계](docs/B14_CONTEXT448_KO.md) |
 | 스케줄링 정책과 연구 근거 | [연구 기록](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | 메모리 제약과 실패한 구성 | [B16 가능성 검토](docs/B16_FEASIBILITY_KO.md) |
+| NIXL을 거친 RNGD → ATOM, 0.1–4 GiB 곡선 | [NIXL 백엔드](docs/nixl-backend.ko.md), [원자료](docs/nixl/curve-20261019.json) |
 
 ## ⚠️ 한계
 
@@ -352,6 +384,8 @@ python -m unittest discover -s tests -v
 |---|---|
 | `src/hetero_p2p/` | Python 전송, layout, 스케줄링, 서빙 계약 |
 | `native/` | RNGD PDMA helper와 빌드 스크립트 |
+| `nixl_plugin/` | `HETERO_NPU` NIXL 백엔드 plugin (C++, meson) |
+| `examples/nixl/` | NIXL 전송 벤치마크와 ATOM export owner |
 | `examples/koni/` | 모델별 연동·벤치마크 도구 |
 | `tests/` | CPU 계약 테스트와 네이티브 검증 도구 |
 | `docs/` | API 안내, 실험 보고서, 지원 범위 |
@@ -362,6 +396,7 @@ python -m unittest discover -s tests -v
 |---|---|
 | 🔧 **라이브러리 사용** | [서빙 라이브러리 API](docs/SERVING_LIBRARY.md) · [지원 범위와 소유권](docs/SUPPORT.md) · [Batch pipeline](docs/BATCH_PIPELINE.md) |
 | 🔌 **llm-d 연결** | [llm-d 연결](docs/LLMD.md) · [HTTP batching](docs/HTTP_BATCHING.md) · [길이별 스케줄링](docs/LENGTH_SCHEDULING.md) |
+| 🔁 **NIXL에서 사용** | [HETERO_NPU NIXL 백엔드](docs/nixl-backend.ko.md) |
 | 📊 **근거 확인** | [검증](docs/VALIDATION.md) · [벤치마크](docs/benchmark-b4/RESULTS_KO.md) · [연구 기록](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | 🧭 **ai-rm 맥락** | [ai-rm](https://github.com/ai-computing/ai-rm) · [Optimus Prime 통합 계획](https://github.com/ai-computing/ai-rm/blob/master/docs/ko/engine-integration.md) · [rm-core protocol](https://github.com/ai-computing/rm-core/blob/main/PROTOCOL.md) |
 

@@ -1,0 +1,10 @@
+option('nixl_src', type: 'string', value: '',
+       description: 'NIXL source tree at the tag matching the runtime (headers only), e.g. v1.5.0')
+option('nixl_libdir', type: 'string', value: '',
+       description: 'Directory holding the runtime libnixl_build.so / libnixl_common.so (pip wheel: <site>/.nixl_cu12.mesonpy.libs)')
+option('absl_include', type: 'string', value: '',
+       description: 'Abseil headers matching NIXL (20250814 for NIXL 1.5.0); empty = dependency(absl_log)')
+option('driver_root', type: 'string', value: '/usr/src/furiosa-driver-rngd-2026.4.0',
+       description: 'Furiosa RNGD driver source (UAPI and address-map headers)')
+option('liburing_root', type: 'string', value: '',
+       description: 'Built liburing tree (src/include, src/liburing.a), as native/build.py; empty = dependency(liburing)')
