@@ -1,22 +1,84 @@
-# hetero-npu-p2p
+<div align="center">
 
-**Completion-fenced KV-cache transport for heterogeneous NPUs on the same Linux host.**
+<h1>hetero-npu-p2p</h1>
 
-`hetero-npu-p2p` separates peer-to-peer transfer planning, buffer ownership, and decode admission from model execution. Its current hardware backend transfers KV data from a Furiosa RNGD into a Rebellions ATOM-owned DMA-BUF. Experimental serving examples connect this data path to llm-d.
+<h3>Completion-fenced KV-cache transport between heterogeneous NPUs on one host</h3>
 
-The Python contracts are model-independent. Hardware adapters are version-specific, and the current implementation is a research prototype rather than a general-purpose inference runtime.
+<p>
+  <strong>English</strong> · <a href="README.ko.md">한국어</a>
+</p>
 
-## Features
+<p>
+  <a href="https://github.com/ai-computing/ai-rm"><img src="https://img.shields.io/badge/ai--rm-L2%20memory%20%26%20transport-22d3ee" alt="ai-rm layer: L2 memory and transport"></a>
+  <a href="https://github.com/ai-computing/rm-core/blob/main/PROTOCOL.md"><img src="https://img.shields.io/badge/protocol-v0.1-7c5cff" alt="Protocol v0.1"></a>
+  <a href="ai-rm.yaml"><img src="https://img.shields.io/badge/maturity-experimental-f59e0b" alt="Maturity: experimental"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.10%2B-3776ab?logo=python&amp;logoColor=white" alt="Python 3.10+"></a>
+  <a href="#-license"><img src="https://img.shields.io/badge/license-not%20declared-64748b" alt="License: not declared"></a>
+</p>
 
-- **Explicit transfer plans:** describe source allocations, destination buffers, and scatter-copy spans.
-- **Completion-fenced admission:** start decode only after all DMA completion entries have been checked.
-- **Buffer lifetime management:** retain allocation owners through transfer and decode; preserve failed leases for diagnosis.
-- **Physical KV layout planning:** construct prefix-copy plans for token-major caches.
-- **Serving primitives:** request validation, capacity control, cache leases, and iteration-level scheduling.
-- **Experimental llm-d integration:** route prefill/decode control requests while KV payloads move through the local P2P path.
-- **Validation tools:** CPU contract tests, hardware compatibility checks, benchmark analysis, and board-energy integration.
+<p>
+  <a href="#-highlights"><b>Highlights</b></a> ·
+  <a href="#-quick-start"><b>Quick start</b></a> ·
+  <a href="#-ai-rm-integration"><b>ai-rm integration</b></a> ·
+  <a href="#-results"><b>Results</b></a> ·
+  <a href="#-documentation"><b>Docs</b></a>
+</p>
 
-## How it works
+</div>
+
+---
+
+**hetero-npu-p2p** moves KV cache from a Furiosa RNGD into a Rebellions ATOM-owned DMA-BUF on the same Linux host,
+and admits decode only after every DMA completion entry has been checked. It separates transfer planning, buffer
+ownership and decode admission from model execution, and connects the data path to llm-d's prefill/decode stages.
+In [ai-rm](https://github.com/ai-computing/ai-rm) it is the **L2 memory & transport** component that provides the
+`KVTransport` contract as `airm.kv_transports:p2p`.
+
+It is also a **migration source for the Optimus Prime engine**: KV-transport technology is planned to move into an
+Optimus Prime module ([consolidation plan](https://github.com/ai-computing/ai-rm/blob/master/docs/engine-integration.md)),
+keeping the same-host scope, ABI constraints, completion fences and explicit failures. Until that consolidation is
+accepted, this repository remains the executable path.
+
+> [!WARNING]
+> **Experimental research prototype.** Hardware support is limited to the validated RNGD→ATOM adapter/ABI
+> combination. P2P output has been verified as exact against a same-batch host-admitted reference at context 512
+> (and an opt-in context 448 path); that is evidence of transport correctness, not of model-quality equivalence.
+> It is not a general-purpose inference runtime.
+
+## ✨ Highlights
+
+<table>
+<tr>
+<td width="33%" valign="top">
+<b>Completion-fenced admission</b><br>
+Decode starts only after all DMA completion entries (CQEs) are checked. Failed or uncertain transfers poison the session instead of recycling the destination.
+</td>
+<td width="33%" valign="top">
+<b>No silent host staging</b><br>
+The ATOM destination allocation is exported as a DMA-BUF and written by RNGD PDMA. The backend never falls back to host copies of the KV payload.
+</td>
+<td width="33%" valign="top">
+<b>Explicit transfer plans</b><br>
+Source allocations, destination buffers and scatter-copy spans are described up front; <code>TokenMajorLayout</code> builds prefix-copy plans for token-major caches.
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+<b>Buffer lifetime management</b><br>
+Allocation owners are retained through transfer and decode; failed leases are preserved for diagnosis.
+</td>
+<td width="33%" valign="top">
+<b>llm-d stage integration</b><br>
+Implements the llm-d <code>pd-sidecar</code> (shared-storage) prefill/decode stage contract: HTTP carries control, KV moves over the local P2P path.
+</td>
+<td width="33%" valign="top">
+<b>Serving primitives and validation</b><br>
+Request validation, capacity control, cache leases, iteration-level scheduling, CPU contract tests, hardware checks and board-energy integration.
+</td>
+</tr>
+</table>
+
+## 🏗 Architecture
 
 ```text
 Prefill model adapter                           Decode model adapter
@@ -34,9 +96,14 @@ model adapters: compute, KV representation, and device synchronization
 hetero-npu-p2p: transfer contracts, completion checks, and cache ownership
 ```
 
-The destination allocation is exported by ATOM and imported by the RNGD transfer path. This backend does not stage the KV payload through host memory or silently fall back to host copies. Model adapters may still perform representation conversion or use host memory for validation and other work.
+The destination allocation is exported by ATOM and imported by the RNGD transfer path. This backend does not stage
+the KV payload through host memory or silently fall back to host copies. Model adapters may still perform
+representation conversion or use host memory for validation and other work. The Python contracts are
+model-independent; hardware adapters are version-specific.
 
-## Requirements
+<details>
+<summary><b>Requirements</b></summary>
+<br>
 
 | Component | Current requirement or validation scope |
 |---|---|
@@ -49,41 +116,29 @@ The destination allocation is exported by ATOM and imported by the RNGD transfer
 | Native helper | GCC, matching RNGD driver development headers, and a built liburing library |
 | Model examples | Additional vendor SDKs, model artifacts, and model-specific dependencies |
 
-Version checks reject unknown environments. Matching versions alone do not establish that a device is available or that P2P works on a particular PCIe topology. See [support and ownership contracts](docs/SUPPORT.md).
+Version checks reject unknown environments. Matching versions alone do not establish that a device is available or
+that P2P works on a particular PCIe topology. See [support and ownership contracts](docs/SUPPORT.md).
+</details>
 
-## Installation
+## 🚀 Quick start
 
-From a checkout of this repository:
+No NPU is required for the contract tests:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
-```
-
-This installs the Python package and the `hetero-p2p` command. It does not install vendor drivers, SDKs, model weights, or the native DMA helper. No package-index installation is assumed.
-
-For hardware transfers, build the helper against the locally installed driver headers and a built liburing tree:
-
-```bash
-python native/build.py \
-  --driver-root /path/to/furiosa-driver-rngd-2026.4.0 \
-  --liburing-root /path/to/liburing-2.6
-```
-
-The build produces `build/rngd-pdma` and its build manifest. Keep them together: the backend checks the helper against the manifest before use.
-
-## Quick start: no NPU required
-
-Run the contract tests on Linux:
-
-```bash
+python -m pip install -e .              # Python package + `hetero-p2p` command
 python -m unittest discover -s tests -v
 ```
 
-These tests cover transfer bounds, buffer aliasing, ownership transitions, incomplete completions, scheduling, and serving contracts. They use test doubles and host-backed fixtures; passing them does not demonstrate hardware DMA.
+The tests cover transfer bounds, buffer aliasing, ownership transitions, incomplete completions, scheduling and
+serving contracts. They use test doubles and host-backed fixtures; passing them does not demonstrate hardware DMA.
+Installation does not include vendor drivers, SDKs, model weights or the native DMA helper, and no package-index
+installation is assumed.
 
-The following example exercises a transfer session with a mock backend. It does **not** copy data:
+<details>
+<summary><b>Mock transfer session (no data is copied)</b></summary>
+<br>
 
 ```python
 import os
@@ -121,9 +176,24 @@ finally:
     os.close(fd)
 ```
 
-The synthetic address, host file descriptor, and placeholder owners above are valid only for this mock example. Hardware transfers require addresses and exported descriptors obtained from live SDK allocations.
+The synthetic address, host file descriptor and placeholder owners above are valid only for this mock example.
+Hardware transfers require addresses and exported descriptors obtained from live SDK allocations.
+</details>
 
-## Hardware integration
+<details>
+<summary><b>Hardware integration: native helper, doctor and model integration steps</b></summary>
+<br>
+
+Build the helper against the locally installed driver headers and a built liburing tree:
+
+```bash
+python native/build.py \
+  --driver-root /path/to/furiosa-driver-rngd-2026.4.0 \
+  --liburing-root /path/to/liburing-2.6
+```
+
+The build produces `build/rngd-pdma` and its build manifest. Keep them together: the backend checks the helper
+against the manifest before use.
 
 Check the installed environment, using the intended physical device path:
 
@@ -131,7 +201,7 @@ Check the installed environment, using the intended physical device path:
 hetero-p2p doctor --device /dev/rngd/npu3ch0
 ```
 
-`doctor` checks versions, ABI, and device-file compatibility. It does not reserve the device or execute a P2P transfer.
+`doctor` checks versions, ABI and device-file compatibility. It does not reserve the device or execute a P2P transfer.
 
 To integrate a model:
 
@@ -141,17 +211,25 @@ To integrate a model:
 4. Create a `CopySession` using `RngdPdmaBackend(helper, device=...)` on the owning process's main thread.
 5. Admit the request, run decode after verified transfer completion, and release the lease only after verified decode completion.
 
-The backend's device path must match the source allocation. A source address is a raw RNGD DRAM offset, not a CPU pointer. Do not manually close exported descriptors or release SDK allocations while a session owns them. Failed or uncertain transfers poison the session rather than recycling the destination.
+The backend's device path must match the source allocation. A source address is a raw RNGD DRAM offset, not a CPU
+pointer. Do not manually close exported descriptors or release SDK allocations while a session owns them. Failed or
+uncertain transfers poison the session rather than recycling the destination.
 
-See [library API and serving contracts](docs/SERVING_LIBRARY.md), [support details](docs/SUPPORT.md), and [hardware validation](docs/VALIDATION.md).
+See [library API and serving contracts](docs/SERVING_LIBRARY.md), [support details](docs/SUPPORT.md) and
+[hardware validation](docs/VALIDATION.md).
+</details>
 
-## llm-d and model examples
+<details>
+<summary><b>llm-d and model examples</b></summary>
+<br>
 
-The llm-d integration implements a local prefill/decode stage contract. HTTP carries requests and control information; the owner processes manage KV transfer and cache leases. This is not a NIXL/Mooncake connector or a cross-node RDMA transport.
+The llm-d integration implements a local prefill/decode stage contract. HTTP carries requests and control
+information; the owner processes manage KV transfer and cache leases. This is not a NIXL/Mooncake connector or a
+cross-node RDMA transport.
 
-The `examples/koni/` directory contains model-specific research examples for KONI-Llama3.1-8B. They require additional model code, compiled artifacts, and separate vendor environments. They are not a turnkey service installed by `pip`.
-
-Start with:
+The `examples/koni/` directory contains model-specific research examples for KONI-Llama3.1-8B. They require
+additional model code, compiled artifacts and separate vendor environments. They are not a turnkey service installed
+by `pip`.
 
 - [llm-d integration](docs/LLMD.md)
 - [HTTP batching setup](docs/HTTP_BATCHING.md)
@@ -159,101 +237,152 @@ Start with:
 - [Iteration scheduling](docs/ITERATION_SERVING_KO.md)
 - [Independent decode replicas](docs/ITERATION_REPLICAS_KO.md)
 
-Compiled B4/B8 examples and opt-in B12/B14 paths have been exercised. Batch size and context length depend on the compiled artifact and available memory; they are not interchangeable runtime switches.
+Compiled B4/B8 examples and opt-in B12/B14 paths have been exercised. Batch size and context length depend on the
+compiled artifact and available memory; they are not interchangeable runtime switches.
+</details>
 
-## Benchmarks
+## 🔌 ai-rm integration
 
-Performance depends on model, batch occupancy, input/output lengths, request arrivals, and hardware allocation. The repository preserves workload-specific results, including regressions and failed experiments.
+| | |
+|---|---|
+| **Layer / kind** | `l2-memory` library, used inside a serving pod ([`ai-rm.yaml`](ai-rm.yaml)) |
+| **Provides** | `KVTransport` (`TransferPlan` / `CopySession` / `RngdPdmaBackend`, llm-d stage broker) |
+| **Uses** | No other ai-rm component. The KONI examples load the `rngd_pd` package from `rngd-pd` through `PYTHONPATH` for model execution |
+| **Adapter** | `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` name `p2p` |
+| **Metrics** | `kv_transfer_ms`, `kv_transfer_gbps` (tag `kv_transport=p2p`) |
+| **KPIs** | Heterogeneous resource count (RNGD + ATOM together); power efficiency (board energy integrated over HTTP intervals by `hetero_p2p.energy`) |
+| **Site config** | None. No endpoints or IPs in code; model, SDK and artifact paths come from config files copied from `examples/koni/*.example.json` |
+
+```python
+from rm_core import registry
+transport = registry.load("airm.kv_transports", "p2p")
+```
+
+```bash
+python -m rm_core.conformance airm.kv_transports p2p
+```
+
+Without a built helper (`HETERO_P2P_HELPER`) and a live-buffer fixture (`HETERO_P2P_CONFORMANCE_FIXTURE`),
+conformance reports **SKIP** with the reason.
+
+<details>
+<summary><b>Protocol v0.1 adapter reference</b></summary>
+<br>
+
+The adapter only wraps the existing `TokenMajorLayout.prefix_plan` and `RngdPdmaBackend.transfer` (which returns
+after all CQEs are checked); it does not substitute host staging.
+
+- `supports`: True only for `furiosa` device memory → `rebellions` device memory (`device-hbm` / `device-dram`) on the same node.
+- `plan`: accepts only an identical `dlfloat16` token-major layout and a prefix range `[0, end)`. An rm-core plan has
+  no real allocation, so the owning process first passes a live RNGD source and ATOM export with
+  `bind(request_id, P2PBinding(source, destinations, mappings, context, slot, batch))`. Range, alignment and format
+  errors raise `TransportError`.
+- `submit` / `wait`: `submit` runs the helper synchronously and stores the result after the completion fence; `wait`
+  returns that result once. Call `submit` on the owning process's main thread. Failure is `ok=False` (no retry, no
+  fallback). A binding is consumed by one `plan`. Each success emits `kv_transfer_ms` and `kv_transfer_gbps`
+  (tag `kv_transport=p2p`) to `transport.measurements` and `metric_sink`.
+- Constructor keywords: `helper`, `device`, `backend`, `metric_sink`. Environment variables: `HETERO_P2P_HELPER`
+  (path to the built `rngd-pdma`), `HETERO_P2P_DEVICE` (default `/dev/rngd/npu1ch0`), `HETERO_P2P_CONFORMANCE_FIXTURE`
+  (`module:callable`, below). The `HETERO_P2P_*` values are local paths, not site values.
+- llm-d stage: `StageBroker(..., kv_transport='p2p')` takes the path name (shown in `/health`), and the owning process
+  loads the implementation by name with `hetero_p2p.llmd.load_kv_transport(name, **kwargs)`.
+
+`conformance_case()` tests on real tiers only when the environment check (`probe`) and helper match and the callable
+named by `HETERO_P2P_CONFORMANCE_FIXTURE` returns `(src_tier, dst_tier, layout, P2PBinding)`; otherwise it SKIPs with
+a reason. The fixture creates live allocations with the model SDKs and owns them for the duration of the test (see
+the setup in `examples/koni/serve.py`).
+
+Power efficiency covers board power only, so neither wall-plug efficiency nor MFU is derived.
+</details>
+
+<details>
+<summary><b>Kubernetes + llm-d: what is still missing</b></summary>
+<br>
+
+There is no Kubernetes deployment yet. `src/hetero_p2p/llmd.py` implements the prefill/decode stage contract of the
+official llm-d `pd-sidecar` (shared-storage) and was validated with local processes in `examples/koni/`
+([llm-d integration](docs/LLMD.md)). A Kubernetes deployment needs:
+
+- an authenticated RPC to a single cache owner and a Unix FD (DMA-BUF) passing path when prefill and decode run in different pods
+- a container image and manifests (RNGD and ATOM devices, the native helper `build/rngd-pdma`)
+- EPP/Envoy routing, multi-node and failure-recovery validation
+</details>
+
+## 📊 Results
+
+KONI-Llama3.1-8B, context 512, inputs of 140/167/227/271 tokens, fixed output length, greedy non-streaming, through
+the llm-d HTTP path. Medians of 3 runs; timings include the cost of full-logit verification.
+
+| Configuration (same 3 cards: 1 RNGD prefill + ATOM decode) | B4 PD | B8 PD | B8/B4 |
+|---|---:|---:|---:|
+| 16 requests, output 32 | 85.66 tok/s | 134.83 tok/s | 1.57× |
+| 16 requests, output 128 | 100.52 tok/s | 176.50 tok/s | 1.76× |
+| 32 requests, mixed output 32/64/96/128 | 93.10 tok/s | 127.47 tok/s | 1.37× |
+
+- All 424 compared requests matched the same-batch host-admitted reference with **exact full logits**; every request
+  completed 64/64 DMA CQEs, with a median DMA time of about 3.0 ms per request ([B8 results](docs/PD_B8_RESULTS_KO.md)).
+- With 1 RNGD + 1 ATOM at B12, 640 requests were exact and the median DMA time was 2.985 ms
+  ([B12 results](docs/PD_B12_RESULTS_KO.md)).
+- Against single-card baselines (output 128, board energy only): PD 98.285 tok/s and 0.6070 tok/J on 3 cards, RNGD
+  solo 66.284 tok/s and 0.4326 tok/J, ATOM vendor solo 52.255 tok/s and 0.8713 tok/J
+  ([comparison](docs/benchmark-b4/RESULTS_KO.md)). PD had higher throughput but lower energy efficiency than ATOM solo.
+
+Performance depends on model, batch occupancy, input/output lengths, request arrivals and hardware allocation.
+Transport output agreement is not proof of model-quality equivalence; PD throughput is not necessarily better than
+standalone inference, and a throughput gain need not improve latency or energy efficiency. The repository preserves
+workload-specific results, including regressions and failed experiments; raw local runs, model weights and compiled
+artifacts may be excluded from Git, and checked-in summaries identify their provenance and limitations.
 
 | Evaluation | Evidence |
 |---|---|
 | Same-batch host-admitted vs P2P output validation | [Validation record](docs/VALIDATION.md) |
+| llm-d HTTP batching (B4) | [HTTP results](docs/HTTP_RESULTS_KO.md) |
 | Batch-width scaling | [B8 results](docs/PD_B8_RESULTS_KO.md), [B12 results](docs/PD_B12_RESULTS_KO.md) |
 | B14/context448, saturation and mixed workloads | [Results and limitations](docs/B14_CONTEXT448_KO.md) |
 | Scheduling policies and research basis | [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | Memory constraints and unsuccessful configurations | [B16 feasibility](docs/B16_FEASIBILITY_KO.md) |
 
-Transport output agreement is not proof of model-quality equivalence. PD throughput is not necessarily better than standalone inference, and a throughput gain need not improve latency or energy efficiency. Raw local runs, model weights, and compiled artifacts may be excluded from Git; checked-in summaries identify their provenance and limitations.
-
-## Limitations
+## ⚠️ Limitations
 
 - Hardware support is limited to the validated adapter/ABI combination and transfer direction.
-- Other models require compatible allocation, layout, conversion, and synchronization adapters.
-- Multi-node transport, full Kubernetes/EPP/Envoy deployment, general sampling, and production token streaming are outside the validated examples.
+- Other models require compatible allocation, layout, conversion and synchronization adapters.
+- Multi-node transport, full Kubernetes/EPP/Envoy deployment, general sampling and production token streaming are outside the validated examples.
 - Forced process termination or device reset during DMA is not a supported recovery mechanism.
 - Board-power integration excludes host CPU/DRAM and does not establish wall-plug efficiency or MFU.
 
-## Development
+## 🛠 Development
 
 ```bash
 python -m pip install -e .
 python -m unittest discover -s tests -v
 ```
 
-For changes to hardware adapters, also verify actual allocation/export behavior, physical layout, completion handling, output correctness, and clean shutdown on the target hardware. Preserve failed runs and record SDK versions, source revisions, and measurement conditions.
+For changes to hardware adapters, also verify actual allocation/export behavior, physical layout, completion
+handling, output correctness and clean shutdown on the target hardware. Preserve failed runs and record SDK versions,
+source revisions and measurement conditions.
 
 | Directory | Contents |
 |---|---|
-| `src/hetero_p2p/` | Python transport, layout, scheduling, and serving contracts |
+| `src/hetero_p2p/` | Python transport, layout, scheduling and serving contracts |
 | `native/` | RNGD PDMA helper and build script |
 | `examples/koni/` | Model-specific integration and benchmark tools |
 | `tests/` | CPU contract tests and native validation utilities |
-| `docs/` | API guidance, experiment reports, and support boundaries |
+| `docs/` | API guidance, experiment reports and support boundaries |
 
-## ai-rm
+## 📚 Documentation
 
-**계층/역할**: `l2-memory` 라이브러리. ai-rm(AI 반도체 통합 자원관리)에서 NPU↔NPU KV cache 전송을 맡는다.
-현재 백엔드는 같은 호스트의 Furiosa RNGD에서 Rebellions ATOM 소유 DMA-BUF로 PDMA 쓰기를 하고, 모든 완료(CQE)를
-확인한 뒤에만 decode를 허용한다. 구성 요약은 [`ai-rm.yaml`](ai-rm.yaml).
+| Goal | Guides |
+|---|---|
+| 🔧 **Use the library** | [Serving library API](docs/SERVING_LIBRARY.md) · [Support and ownership](docs/SUPPORT.md) · [Batch pipeline](docs/BATCH_PIPELINE.md) |
+| 🔌 **Connect to llm-d** | [llm-d integration](docs/LLMD.md) · [HTTP batching](docs/HTTP_BATCHING.md) · [Length scheduling](docs/LENGTH_SCHEDULING.md) |
+| 📊 **Check the evidence** | [Validation](docs/VALIDATION.md) · [Benchmarks](docs/benchmark-b4/RESULTS_KO.md) · [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
+| 🧭 **ai-rm context** | [ai-rm](https://github.com/ai-computing/ai-rm) · [Optimus Prime consolidation plan](https://github.com/ai-computing/ai-rm/blob/master/docs/engine-integration.md) · [rm-core protocol](https://github.com/ai-computing/rm-core/blob/main/PROTOCOL.md) |
 
-**k8s + llm-d 연동**: 아직 없다. `src/hetero_p2p/llmd.py`는 llm-d 공식 `pd-sidecar`(shared-storage)의
-prefill/decode stage 계약을 구현하고, `examples/koni/`에서 로컬 프로세스로 검증했다([llm-d 연결](docs/LLMD.md)).
-k8s 배포에 필요한 것:
-- prefill/decode를 다른 Pod로 나눌 때 단일 cache owner로의 인증된 RPC와 Unix FD(DMA-BUF) 전달 경로
-- 컨테이너 이미지와 매니페스트(RNGD·ATOM 디바이스, 네이티브 helper `build/rngd-pdma` 포함)
-- EPP/Envoy 경로, 다중 노드, 장애 복구 검증
+Most experiment reports (`*_KO.md`) are written in Korean.
 
-**설치/테스트** (테스트는 NPU 불필요):
+## 📄 License
 
-```bash
-python -m pip install -e .
-python -m unittest discover -s tests
-```
+A project license has not yet been declared in a `LICENSE` file. Public repository access does not by itself grant
+an open-source license. Vendor SDKs, driver components and model artifacts remain subject to their respective terms.
 
-하드웨어 전송에는 `native/build.py`로 helper를 빌드하고 `hetero-p2p doctor --device <rngd-device>`로 환경을 확인한다.
-
-**인터페이스**: provides `KVTransport`(`TransferPlan`/`CopySession`/`RngdPdmaBackend`, llm-d stage broker).
-다른 ai-rm 구성요소를 사용하지 않는다. KONI 예제는 모델 실행에 `rngd-pd`의 `rngd_pd` 패키지를 `PYTHONPATH`로 불러온다.
-
-**ai-rm protocol v0.1 adapter**: `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` 이름 `p2p`.
-기존 `TokenMajorLayout.prefix_plan`과 `RngdPdmaBackend.transfer`(모든 CQE 확인 후 반환)를 감쌀 뿐이며 host staging으로 대체하지 않는다.
-
-- `supports`: 같은 노드의 `furiosa` 장치 메모리 → `rebellions` 장치 메모리(`device-hbm`/`device-dram`)만 True.
-- `plan`: `dlfloat16` token-major 동일 layout, prefix 구간 `[0, end)`만 허용. rm-core 계획에는 실제 할당이 없으므로
-  소유 프로세스가 먼저 `bind(request_id, P2PBinding(source, destinations, mappings, context, slot, batch))`로
-  살아 있는 RNGD source와 ATOM export를 넘긴다. 범위·정렬·형식 오류는 `TransportError`.
-- `submit`/`wait`: `submit`이 helper를 동기 실행해 완료 fence 이후 결과를 남기고, `wait`가 그 결과를 한 번만 돌려준다.
-  `submit`은 소유 프로세스의 main thread에서 호출한다. 실패는 `ok=False`(재시도·우회 없음). binding은 한 번의 `plan`에서 소비된다. 성공마다 `kv_transfer_ms`, `kv_transfer_gbps`(tag `kv_transport=p2p`)를
-  `transport.measurements`와 `metric_sink`로 낸다.
-- 생성자 키워드: `helper`, `device`, `backend`, `metric_sink`. 환경 변수: `HETERO_P2P_HELPER`(빌드한 `rngd-pdma` 경로),
-  `HETERO_P2P_DEVICE`(기본 `/dev/rngd/npu1ch0`), `HETERO_P2P_CONFORMANCE_FIXTURE`(`module:callable`, 아래).
-- llm-d stage: `StageBroker(..., kv_transport='p2p')`가 경로 이름을 받고(`/health`에 표시), 소유 프로세스는
-  `hetero_p2p.llmd.load_kv_transport(name, **kwargs)`로 이름에서 구현을 불러온다.
-
-```bash
-python -m rm_core.conformance airm.kv_transports p2p
-```
-
-`conformance_case()`는 환경 검사(`probe`)와 helper가 맞고, `HETERO_P2P_CONFORMANCE_FIXTURE`가 가리키는 callable이
-`(src_tier, dst_tier, layout, P2PBinding)`을 돌려줄 때만 실제 tier로 시험한다. 그렇지 않으면 이유와 함께 SKIP이다.
-fixture는 모델 SDK로 살아 있는 할당을 만들고 시험 동안 소유한다(`examples/koni/serve.py`의 준비 과정 참고).
-
-**지원 KPI**: 이종자원수(RNGD+ATOM 동시 사용), 전력효율(`hetero_p2p.energy`의 HTTP 구간 보드 에너지 적분).
-보드 전력만 포함하므로 wall-plug 효율이나 MFU를 산출하지 않는다.
-
-**`cluster.local.env` 변수**: 없다. 엔드포인트·IP를 코드에 두지 않으며, 모델·SDK·아티팩트 경로는
-`examples/koni/*.example.json`을 복사한 설정 파일로 전달한다. adapter의 `HETERO_P2P_*`는 로컬 경로일 뿐 사이트 값이 아니다.
-
-## License
-
-A project license has not yet been declared in a `LICENSE` file. Public repository access does not by itself grant an open-source license. Vendor SDKs, driver components, and model artifacts remain subject to their respective terms.
+<div align="center"><sub>Part of <a href="https://github.com/ai-computing/ai-rm">ai-rm</a> · ai-computing team · ETRI</sub></div>
