@@ -9,25 +9,14 @@ owning process binds them per request with `bind()` before `plan()`.
 """
 from dataclasses import dataclass
 from collections import deque
-import importlib,os,sys,time,uuid
-from rm_core import TransferHandle,TransferPlan,TransferResult,TransportError
+import importlib,os,time,uuid
+from rm_core import NoHardware,TransferHandle,TransferPlan,TransferResult,TransportError
 from rm_core.metrics import Measurement
 from .backend import RngdPdmaBackend,probe
 from .core import DestinationAllocation,SourceAllocation
 from .layout import TokenMajorLayout
 
 DEVICE_KINDS=('device-hbm','device-dram')
-
-
-def _no_hardware():
-    # rm-core v0.1.0: `python -m rm_core.conformance` runs that module as __main__, so its SKIP
-    # handler catches __main__.NoHardware, not the imported class. Raise one matching both.
-    from rm_core.conformance import NoHardware
-    main=sys.modules.get('__main__')
-    other=getattr(main,'NoHardware',None)
-    if getattr(getattr(main,'__spec__',None),'name',None)=='rm_core.conformance' and other not in (None,NoHardware):
-        return type('NoHardware',(NoHardware,other),{})
-    return NoHardware
 
 
 @dataclass(frozen=True)
@@ -154,7 +143,6 @@ class P2PTransport:
         HETERO_P2P_CONFORMANCE_FIXTURE=`module:callable`; it receives this transport and returns
         `(src_tier, dst_tier, layout, binding)` with owners kept alive by the fixture.
         """
-        NoHardware=_no_hardware()
         health=probe(self.device)
         if not health['supported']:
             failed=sorted(k for k,v in health['checks'].items() if not v)

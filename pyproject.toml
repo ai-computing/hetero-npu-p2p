@@ -7,7 +7,7 @@ name = "hetero-npu-p2p"
 version = "0.6.0"
 description = "Experimental completion-fenced same-host heterogeneous NPU KV transport"
 requires-python = ">=3.10"
-dependencies = ["rm-core @ git+https://github.com/ai-computing/rm-core@v0.1.0"]
+dependencies = ["rm-core @ git+https://github.com/ai-computing/rm-core@v0.1.1"]
 
 [project.scripts]
 hetero-p2p = "hetero_p2p.cli:main"
