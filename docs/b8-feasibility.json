@@ -134,5 +134,5 @@
     "observed_memory": "14.7GiB / 15.7GiB from rbln-smi during repeat2",
     "device": 2
   },
-  "raw_root": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/length_optimization_20261016"
+  "raw_root": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/length_optimization_20261016"
 }

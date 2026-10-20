@@ -63,7 +63,7 @@
       "ttft_p99_ms": 2664.6561473986367,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
       "board_joules": {
         "rngd": 450.25933385234384,
         "atom-2": 59.948316056446224,
@@ -81,7 +81,7 @@
       "ttft_p99_ms": 2659.108295149963,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
       "board_joules": {
         "rngd": 450.3596485641826,
         "atom-2": 59.94187877377418,
@@ -99,7 +99,7 @@
       "ttft_p99_ms": 2667.8822923486223,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
       "board_joules": {
         "rngd": 460.1759143115249,
         "atom-2": 60.13263614640941,
@@ -117,7 +117,7 @@
       "ttft_p99_ms": 2672.140339001089,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
       "board_joules": {
         "rngd": 467.3756237424277,
         "atom-2": 60.25885239410124,
@@ -135,7 +135,7 @@
       "ttft_p99_ms": 2665.293825050503,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/rngd-native-r1/waves.jsonl",
       "board_joules": {
         "rngd": 461.35148707924964,
         "atom-2": 60.096538646715416,
@@ -153,7 +153,7 @@
       "ttft_p99_ms": 14472.936373300035,
       "tpot_mean_p99_ms": 70.08718667897953,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 671.4113764399372,
         "atom-2": 327.28256379838,
@@ -171,7 +171,7 @@
       "ttft_p99_ms": 6216.594523347339,
       "tpot_mean_p99_ms": 70.02809305962023,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 335.228647920012,
         "atom-2": 410.03410136302296,
@@ -189,7 +189,7 @@
       "ttft_p99_ms": 3412.4521431000176,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 365.56313706988294,
         "atom-2": 318.51513754142667,
@@ -207,7 +207,7 @@
       "ttft_p99_ms": 3414.108895601021,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 397.51556665968747,
         "atom-2": 319.16312673081893,
@@ -225,7 +225,7 @@
       "ttft_p99_ms": 6221.639196299475,
       "tpot_mean_p99_ms": 69.93771935482191,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 368.33205405647095,
         "atom-2": 478.82956662375216,
@@ -243,7 +243,7 @@
       "ttft_p99_ms": 14481.019709449174,
       "tpot_mean_p99_ms": 70.2039611064749,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 671.7685879199416,
         "atom-2": 415.8564187879975,
@@ -261,7 +261,7 @@
       "ttft_p99_ms": 14502.573652700632,
       "tpot_mean_p99_ms": 70.68747979841235,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 672.9221426400181,
         "atom-2": 330.91703060623735,
@@ -279,7 +279,7 @@
       "ttft_p99_ms": 6231.2208641018515,
       "tpot_mean_p99_ms": 70.12560625965807,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 335.55776092005544,
         "atom-2": 426.9624115828148,
@@ -297,7 +297,7 @@
       "ttft_p99_ms": 3423.435635551141,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 365.71462711910254,
         "atom-2": 319.7178868060853,
@@ -315,7 +315,7 @@
       "ttft_p99_ms": 3420.4212454997105,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 391.9391207254991,
         "atom-2": 320.40671946069403,
@@ -333,7 +333,7 @@
       "ttft_p99_ms": 6243.8556834977135,
       "tpot_mean_p99_ms": 70.27671752739772,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 362.377391042417,
         "atom-2": 482.25431997105807,
@@ -351,7 +351,7 @@
       "ttft_p99_ms": 14461.671213300542,
       "tpot_mean_p99_ms": 70.00635412419915,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 661.0970464534585,
         "atom-2": 476.66486666503914,
@@ -369,7 +369,7 @@
       "ttft_p99_ms": 14471.015821849689,
       "tpot_mean_p99_ms": 70.02193673068822,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 659.0050361020039,
         "atom-2": 330.9316122228147,
@@ -387,7 +387,7 @@
       "ttft_p99_ms": 6237.427465300243,
       "tpot_mean_p99_ms": 70.1750102467779,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 328.0767033571028,
         "atom-2": 426.0483983948077,
@@ -405,7 +405,7 @@
       "ttft_p99_ms": 3421.019747000355,
       "tpot_mean_p99_ms": null,
       "all_single_token_events": false,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/solo_pd_comparison_20261015/runs/independent-r1/waves.jsonl",
       "board_joules": {
         "rngd": 366.6726622916358,
         "atom-2": 319.58301347660125,
@@ -423,7 +423,7 @@
       "ttft_p99_ms": 4735.944086901327,
       "tpot_mean_p99_ms": 69.87726186137978,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
       "board_joules": {
         "rngd": 276.5163578744562,
         "atom-2": 384.9538799886786,
@@ -441,7 +441,7 @@
       "ttft_p99_ms": 4731.912473749799,
       "tpot_mean_p99_ms": 69.99282832256863,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
       "board_joules": {
         "rngd": 288.7174082063449,
         "atom-2": 387.72147167084177,
@@ -459,7 +459,7 @@
       "ttft_p99_ms": 4731.877957151664,
       "tpot_mean_p99_ms": 70.019981200048,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
       "board_joules": {
         "rngd": 279.85261988753604,
         "atom-2": 390.37214653156553,
@@ -477,7 +477,7 @@
       "ttft_p99_ms": 4721.756214949346,
       "tpot_mean_p99_ms": 70.0854433984146,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
       "board_joules": {
         "rngd": 282.1355726632646,
         "atom-2": 389.32181752321713,
@@ -495,7 +495,7 @@
       "ttft_p99_ms": 4730.14530669916,
       "tpot_mean_p99_ms": 69.98391619676583,
       "all_single_token_events": true,
-      "source": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
+      "source": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/koni-integration-20261015/koni-comparison-pd-r59/waves.jsonl",
       "board_joules": {
         "rngd": 278.68916069893385,
         "atom-2": 390.65838393590735,

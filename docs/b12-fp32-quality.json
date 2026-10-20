@@ -1,7 +1,7 @@
 {
   "scope": "HF FP32 eager CPU on backend own history; four prompts, not task accuracy/non-inferiority",
   "batch": 12,
-  "model": "/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+  "model": "/home/<user>/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
   "run": "hetero-npu-p2p/results/pd-b12-r1",
   "rows": [
     {

@@ -99,7 +99,7 @@
   "ownership_violations": [],
   "exact_full_logit_parity": true,
   "power_measured": false,
-  "raw_root": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/results/length-r1",
+  "raw_root": "/home/<user>/workspace/01_pd_disag/hetero-npu-p2p/results/length-r1",
   "source_manifest": {
     "head": "abda71ce33efe816c2acf47ab411a5af078fd0f6",
     "dirty": true,

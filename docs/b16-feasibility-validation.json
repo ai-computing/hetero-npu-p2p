@@ -8,7 +8,7 @@
     "passed": true,
     "compiled_only": true,
     "artifacts": [
-      "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/b16_feasibility_20261016/r1/compiled/b4a7372365831f69.rbln"
+      "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b16_feasibility_20261016/r1/compiled/b4a7372365831f69.rbln"
     ],
     "runtime_validated": false,
     "seconds": 155.69348239898682
@@ -23,7 +23,7 @@
         104.71321627976373
       ],
       "median_step_ms": 76.03578300768277,
-      "raw_result": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/b16_feasibility_20261016/b8-control/measure-result.json"
+      "raw_result": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b16_feasibility_20261016/b8-control/measure-result.json"
     },
     "b16-measure": {
       "strict_cross_B8_parity_passed": false,
@@ -34,12 +34,12 @@
         177.80515540511118
       ],
       "median_step_ms": 89.79110699874582,
-      "raw_result": "/home/user/workspace/01_pd_disag/experiments/native_pd_2026_4/b16_feasibility_20261016/b16-measure/measure-result.json"
+      "raw_result": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b16_feasibility_20261016/b16-measure/measure-result.json"
     }
   },
   "fp32_reference": {
     "reference": "HF FP32 eager CPU, fixed four prompts, 128 positions; not task accuracy",
-    "model": "/home/user/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+    "model": "/home/<user>/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
     "rows": [
       {
         "backend": "B8",

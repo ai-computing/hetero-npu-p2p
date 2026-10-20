@@ -93,7 +93,7 @@
     "3": 3
   },
   "median_dma_ms": 3.1584790000000003,
-  "raw_root": "/home/user/workspace/01_pd_disag/hetero-npu-p2p/results/http-b4-r1",
+  "raw_root": "/home/<user>/workspace/01_pd_disag/hetero-npu-p2p/results/http-b4-r1",
   "scope": "HTTP wall time through llm-d shared-storage sidecar; no power sampling in this run; same-B4 host reference, not model accuracy",
   "source_manifest": {
     "git_head": "5d402e727a91e7995c3da963182142299aeda181",
