@@ -17,7 +17,7 @@ from rngd_pd.native_v4.build_resident import ResidentDecode
 p=Path(os.environ['HETERO_BUILD_DIR']).resolve();p.mkdir(parents=True,exist_ok=False)
 from batch_control import assert_atom_idle
 assert_atom_idle(p)
-modeldir=Path('/home/gspark/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678')
+modeldir=Path.home()/Path('.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678')
 result={'kind':'koni_external_full_decoder','layers':32,'batch':N,'context':S,'full_output_projection':projection=='1','revision':modeldir.name}
 start=time.time()
 try:

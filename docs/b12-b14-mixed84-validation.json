@@ -10,7 +10,7 @@
         "queue_policy": "length",
         "batch": 12,
         "context": 512,
-        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
+        "artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
         "median": 115.10338351297052,
         "repeats": [
           115.10338351297052,
@@ -22,7 +22,7 @@
         "queue_policy": "length",
         "batch": 14,
         "context": 448,
-        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
+        "artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
         "median": 124.83791223121077,
         "repeats": [
           125.46384963529508,
@@ -39,7 +39,7 @@
         "queue_policy": "length",
         "batch": 12,
         "context": 512,
-        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
+        "artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
         "median": 115.25841403515231,
         "repeats": [
           125.09647843677158,
@@ -51,7 +51,7 @@
         "queue_policy": "length",
         "batch": 14,
         "context": 448,
-        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
+        "artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
         "median": 139.04372526447,
         "repeats": [
           139.04372526447,

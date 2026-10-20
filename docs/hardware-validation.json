@@ -34,10 +34,10 @@
       "-I/usr/src/furiosa-driver-rngd-2026.4.0/include",
       "-I/usr/src/furiosa-driver-rngd-2026.4.0/src",
       "-Iexperiments/native_pd_2026_4/p2p_dma/devkit/liburing-2.6/src/include",
-      "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/native/rngd_pdma.c",
+      "/home/<user>/workspace/01_pd_disag/hetero-npu-p2p/native/rngd_pdma.c",
       "experiments/native_pd_2026_4/p2p_dma/devkit/liburing-2.6/src/liburing.a",
       "-o",
-      "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma"
+      "/home/<user>/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma"
     ]
   },
   "source_hashes": {

@@ -9,7 +9,7 @@
       "baseline": {
         "batch": 12,
         "context": 512,
-        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
+        "artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b12_full_projection_20261016/r1/compiled/14be9e8e24a679bd.rbln",
         "median": 133.71503892658612,
         "repeats": [
           135.31261126373676,
@@ -20,7 +20,7 @@
       "candidate": {
         "batch": 14,
         "context": 448,
-        "artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
+        "artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/b14_s448_20261016/r1/compiled/ac3c345417c44bcf.rbln",
         "median": 151.5280600838017,
         "repeats": [
           151.5280600838017,

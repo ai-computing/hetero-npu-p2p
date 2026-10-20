@@ -5,12 +5,12 @@
   "median_dma_ms": 2.9751105,
   "config": {
     "out": "/tmp/hetero-pd-padding-r1",
-    "model": "/home/gspark/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
-    "atom_artifact": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/length_optimization_20261016/b8/compiled/c244ef77d4e90da8.rbln",
-    "tables": "/home/gspark/workspace/01_pd_disag/experiments/npu_pd_extended_20261014/pd_atom/tables.npz",
-    "workload": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/real_workload_20261015/workload.json",
-    "helper": "/home/gspark/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma",
-    "atom_python": "/home/gspark/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/devkit/torch-venv/bin/python",
+    "model": "/home/<user>/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+    "atom_artifact": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/length_optimization_20261016/b8/compiled/c244ef77d4e90da8.rbln",
+    "tables": "/home/<user>/workspace/01_pd_disag/experiments/npu_pd_extended_20261014/pd_atom/tables.npz",
+    "workload": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/real_workload_20261015/workload.json",
+    "helper": "/home/<user>/workspace/01_pd_disag/hetero-npu-p2p/build/rngd-pdma",
+    "atom_python": "/home/<user>/workspace/01_pd_disag/experiments/native_pd_2026_4/p2p_dma/devkit/torch-venv/bin/python",
     "atom_devices": [
       2
     ],

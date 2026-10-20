@@ -56,7 +56,7 @@
 원본: `results/pd-iter-r1` (기존 `/tmp`에서 이동), [분석 JSON](iteration-validation.json). config, source SHA256와 소스 snapshot, patch, worker/HTTP/event 로그, host reference를 보존했다. raw 파일은 git 제외이며 요약·코드는 git 관리한다.
 
 재분석: `python3 examples/koni/analyze_iteration.py results/pd-iter-r1 --output /tmp/iteration-analysis.json`.
-서버: `PYTHONPATH=src:../rngd_llmd/src /home/gspark/venvs/furiosa-2026.4/bin/python examples/koni/serve_iteration.py --config artifacts/koni-pd-iter-local.json` (config의 out은 존재하지 않는 새 디렉터리로 변경).
+서버: `PYTHONPATH=src:../rngd_llmd/src ~/venvs/furiosa-2026.4/bin/python examples/koni/serve_iteration.py --config artifacts/koni-pd-iter-local.json` (config의 out은 존재하지 않는 새 디렉터리로 변경).
 클라이언트: `python3 examples/koni/validate_iteration.py --config artifacts/koni-pd-iter-local.json`, sidecar는 기존18823→18822 shared-storage control 구성.
 
 다음은 staggered arrival에서 quantum4/16/128 및 빈 슬롯에 따른 adaptive quantum을 비교하고, 두 ATOM으로 확장하는 단계다. 긴 요청의 지연·p99를 함께 보며, 검증을 생략해서 처리량을 올리지 않는다.

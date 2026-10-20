@@ -21,7 +21,7 @@
       "strict_reference_parity": false,
       "transport_validated": false
     },
-    "model": "/home/gspark/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
+    "model": "/home/<user>/.cache/huggingface/hub/models--KISTI-KONI--KONI-Llama3.1-8B-Instruct-20241024/snapshots/0172bf7e73977ae213613529f3d2d5400a33f678",
     "run": "experiments/native_pd_2026_4/b12_full_projection_20261016/eager-measure-r1",
     "rows": [
       {
