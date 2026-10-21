@@ -412,6 +412,7 @@ source revisions and measurement conditions.
 | 🔧 **Use the library** | [Serving library API](docs/SERVING_LIBRARY.md) · [Support and ownership](docs/SUPPORT.md) · [Batch pipeline](docs/BATCH_PIPELINE.md) |
 | 🔌 **Connect to llm-d** | [llm-d integration](docs/LLMD.md) · [HTTP batching](docs/HTTP_BATCHING.md) · [Length scheduling](docs/LENGTH_SCHEDULING.md) |
 | 🔁 **Use from NIXL** | [HETERO_NPU NIXL backend](docs/nixl-backend.md) |
+| 🟩 **GPU ↔ RNGD** | [DMA-BUF transport (`hetero_p2p.gpu`)](docs/gpu-rngd.md): RNGD PDMA to and from CUDA memory, 14 / 21 GB/s at 1 GiB, NVIDIA open kernel module required |
 | 📊 **Check the evidence** | [Validation](docs/VALIDATION.md) · [Benchmarks](docs/benchmark-b4/RESULTS_KO.md) · [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | 🧭 **ai-rm context** | [ai-rm](https://github.com/ai-computing/ai-rm) · [Optimus Prime consolidation plan](https://github.com/ai-computing/ai-rm/blob/master/docs/engine-integration.md) · [rm-core protocol](https://github.com/ai-computing/rm-core/blob/main/PROTOCOL.md) |
 
