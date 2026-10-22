@@ -1,0 +1,2193 @@
+{
+ "env": {
+  "kernel": "6.8.0-106-generic",
+  "torch": "2.8.0+cu128",
+  "nvidia_module": "open",
+  "nvidia": "580.178.04",
+  "gpus": [
+   "NVIDIA A100 80GB PCIe",
+   "NVIDIA A100 80GB PCIe"
+  ],
+  "queue_depth": 4,
+  "descriptors_per_command": 64,
+  "slice_MiB": 256,
+  "exact_cache": 256,
+  "reps": 5,
+  "npu_offset": 4294967296
+ },
+ "pairs": [
+  {
+   "chip": 0,
+   "gpu": 0,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 8.1,
+   "rngd_to_gpu_GBps": 13.83,
+   "gpu_to_rngd_ms": [
+    0.581,
+    0.287,
+    0.259,
+    0.253,
+    0.241
+   ],
+   "rngd_to_gpu_ms": [
+    0.595,
+    0.18,
+    0.152,
+    0.147,
+    0.15
+   ],
+   "bar_pages_checked": 62,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 2
+  },
+  {
+   "chip": 0,
+   "gpu": 0,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.45,
+   "rngd_to_gpu_GBps": 14.45,
+   "gpu_to_rngd_ms": [
+    0.708,
+    0.463,
+    0.443,
+    0.444,
+    0.438
+   ],
+   "rngd_to_gpu_ms": [
+    0.939,
+    0.318,
+    0.278,
+    0.285,
+    0.29
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 4
+  },
+  {
+   "chip": 0,
+   "gpu": 0,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.13,
+   "rngd_to_gpu_GBps": 17.13,
+   "gpu_to_rngd_ms": [
+    1.766,
+    1.657,
+    1.613,
+    1.637,
+    1.656
+   ],
+   "rngd_to_gpu_ms": [
+    1.312,
+    1.02,
+    0.959,
+    0.964,
+    0.979
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 6
+  },
+  {
+   "chip": 0,
+   "gpu": 0,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 8.83,
+   "rngd_to_gpu_GBps": 18.16,
+   "gpu_to_rngd_ms": [
+    7.876,
+    7.144,
+    7.035,
+    7.6,
+    7.637
+   ],
+   "rngd_to_gpu_ms": [
+    4.008,
+    3.756,
+    3.694,
+    3.629,
+    3.648
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 8
+  },
+  {
+   "chip": 0,
+   "gpu": 0,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.36,
+   "rngd_to_gpu_GBps": 18.74,
+   "gpu_to_rngd_ms": [
+    23.441,
+    21.711,
+    21.406,
+    21.182,
+    22.104
+   ],
+   "rngd_to_gpu_ms": [
+    14.809,
+    14.752,
+    14.325,
+    14.226,
+    14.24
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 10
+  },
+  {
+   "chip": 0,
+   "gpu": 0,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.23,
+   "rngd_to_gpu_GBps": 20.81,
+   "gpu_to_rngd_ms": [
+    90.464,
+    76.171,
+    75.459,
+    74.173,
+    74.719
+   ],
+   "rngd_to_gpu_ms": [
+    53.203,
+    51.753,
+    50.937,
+    51.604,
+    50.828
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 18
+  },
+  {
+   "chip": 0,
+   "gpu": 1,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 9.0,
+   "rngd_to_gpu_GBps": 13.54,
+   "gpu_to_rngd_ms": [
+    0.528,
+    0.261,
+    0.233,
+    0.23,
+    0.233
+   ],
+   "rngd_to_gpu_ms": [
+    0.322,
+    0.155,
+    0.157,
+    0.155,
+    0.147
+   ],
+   "bar_pages_checked": 61,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 2
+  },
+  {
+   "chip": 0,
+   "gpu": 1,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.29,
+   "rngd_to_gpu_GBps": 14.87,
+   "gpu_to_rngd_ms": [
+    0.633,
+    0.489,
+    0.444,
+    0.445,
+    0.452
+   ],
+   "rngd_to_gpu_ms": [
+    0.577,
+    0.333,
+    0.278,
+    0.282,
+    0.277
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 4
+  },
+  {
+   "chip": 0,
+   "gpu": 1,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.31,
+   "rngd_to_gpu_GBps": 17.51,
+   "gpu_to_rngd_ms": [
+    1.808,
+    1.627,
+    1.627,
+    1.601,
+    1.633
+   ],
+   "rngd_to_gpu_ms": [
+    1.351,
+    1.009,
+    0.956,
+    0.958,
+    0.926
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 6
+  },
+  {
+   "chip": 0,
+   "gpu": 1,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.03,
+   "rngd_to_gpu_GBps": 17.24,
+   "gpu_to_rngd_ms": [
+    7.925,
+    7.429,
+    7.041,
+    7.865,
+    7.188
+   ],
+   "rngd_to_gpu_ms": [
+    4.234,
+    3.927,
+    3.892,
+    3.859,
+    3.724
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 8
+  },
+  {
+   "chip": 0,
+   "gpu": 1,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 11.96,
+   "rngd_to_gpu_GBps": 18.04,
+   "gpu_to_rngd_ms": [
+    22.493,
+    21.746,
+    22.439,
+    22.807,
+    22.193
+   ],
+   "rngd_to_gpu_ms": [
+    14.971,
+    14.906,
+    14.451,
+    14.522,
+    14.88
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 10
+  },
+  {
+   "chip": 0,
+   "gpu": 1,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.05,
+   "rngd_to_gpu_GBps": 20.74,
+   "gpu_to_rngd_ms": [
+    77.52,
+    77.222,
+    76.43,
+    74.996,
+    75.86
+   ],
+   "rngd_to_gpu_ms": [
+    51.735,
+    51.732,
+    51.968,
+    51.768,
+    51.999
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 18
+  },
+  {
+   "chip": 1,
+   "gpu": 0,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 6.32,
+   "rngd_to_gpu_GBps": 12.43,
+   "gpu_to_rngd_ms": [
+    0.497,
+    0.262,
+    0.332,
+    0.332,
+    0.255
+   ],
+   "rngd_to_gpu_ms": [
+    0.496,
+    0.212,
+    0.169,
+    0.158,
+    0.158
+   ],
+   "bar_pages_checked": 62,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 2
+  },
+  {
+   "chip": 1,
+   "gpu": 0,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.55,
+   "rngd_to_gpu_GBps": 14.79,
+   "gpu_to_rngd_ms": [
+    0.596,
+    0.456,
+    0.435,
+    0.429,
+    0.439
+   ],
+   "rngd_to_gpu_ms": [
+    0.496,
+    0.278,
+    0.282,
+    0.3,
+    0.284
+   ],
+   "bar_pages_checked": 63,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 4
+  },
+  {
+   "chip": 1,
+   "gpu": 0,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 9.93,
+   "rngd_to_gpu_GBps": 17.08,
+   "gpu_to_rngd_ms": [
+    1.834,
+    1.69,
+    1.662,
+    1.681,
+    1.721
+   ],
+   "rngd_to_gpu_ms": [
+    1.401,
+    1.058,
+    0.982,
+    0.979,
+    0.976
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 6
+  },
+  {
+   "chip": 1,
+   "gpu": 0,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.21,
+   "rngd_to_gpu_GBps": 17.47,
+   "gpu_to_rngd_ms": [
+    8.876,
+    7.287,
+    7.216,
+    7.571,
+    7.142
+   ],
+   "rngd_to_gpu_ms": [
+    4.132,
+    3.844,
+    3.719,
+    3.726,
+    3.84
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 8
+  },
+  {
+   "chip": 1,
+   "gpu": 0,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.18,
+   "rngd_to_gpu_GBps": 18.11,
+   "gpu_to_rngd_ms": [
+    22.605,
+    21.722,
+    21.675,
+    22.392,
+    22.039
+   ],
+   "rngd_to_gpu_ms": [
+    14.827,
+    15.016,
+    14.404,
+    14.586,
+    14.922
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 10
+  },
+  {
+   "chip": 1,
+   "gpu": 0,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.29,
+   "rngd_to_gpu_GBps": 20.99,
+   "gpu_to_rngd_ms": [
+    75.115,
+    74.683,
+    75.695,
+    76.456,
+    74.828
+   ],
+   "rngd_to_gpu_ms": [
+    52.014,
+    50.958,
+    51.537,
+    51.157,
+    50.798
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 18
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 8.08,
+   "rngd_to_gpu_GBps": 13.29,
+   "gpu_to_rngd_ms": [
+    0.499,
+    0.269,
+    0.26,
+    0.24,
+    0.24
+   ],
+   "rngd_to_gpu_ms": [
+    0.421,
+    0.196,
+    0.158,
+    0.15,
+    0.153
+   ],
+   "bar_pages_checked": 61,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 2
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.9,
+   "rngd_to_gpu_GBps": 14.99,
+   "gpu_to_rngd_ms": [
+    0.552,
+    0.432,
+    0.415,
+    0.424,
+    0.419
+   ],
+   "rngd_to_gpu_ms": [
+    0.587,
+    0.334,
+    0.274,
+    0.275,
+    0.28
+   ],
+   "bar_pages_checked": 63,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 4
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.5,
+   "rngd_to_gpu_GBps": 17.24,
+   "gpu_to_rngd_ms": [
+    2.263,
+    1.598,
+    1.565,
+    1.626,
+    1.575
+   ],
+   "rngd_to_gpu_ms": [
+    1.314,
+    1.002,
+    0.973,
+    0.947,
+    0.958
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 6
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.5,
+   "rngd_to_gpu_GBps": 17.59,
+   "gpu_to_rngd_ms": [
+    7.887,
+    7.063,
+    7.005,
+    8.006,
+    7.045
+   ],
+   "rngd_to_gpu_ms": [
+    4.062,
+    3.814,
+    3.816,
+    3.787,
+    3.702
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 8
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.1,
+   "rngd_to_gpu_GBps": 17.97,
+   "gpu_to_rngd_ms": [
+    22.247,
+    22.102,
+    22.188,
+    21.353,
+    22.39
+   ],
+   "rngd_to_gpu_ms": [
+    14.94,
+    14.981,
+    14.773,
+    14.905,
+    15.148
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 10
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.14,
+   "rngd_to_gpu_GBps": 20.93,
+   "gpu_to_rngd_ms": [
+    76.47,
+    75.959,
+    76.601,
+    75.475,
+    75.691
+   ],
+   "rngd_to_gpu_ms": [
+    51.354,
+    51.029,
+    51.313,
+    51.23,
+    51.446
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 18
+  }
+ ],
+ "exports": [
+  {
+   "variant": "cached",
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 8.11,
+   "rngd_to_gpu_GBps": 12.96,
+   "gpu_to_rngd_ms": [
+    0.414,
+    0.259,
+    0.26,
+    0.238,
+    0.233
+   ],
+   "rngd_to_gpu_ms": [
+    0.436,
+    0.201,
+    0.162,
+    0.146,
+    0.144
+   ],
+   "bar_pages_checked": 61,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "cached",
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.69,
+   "rngd_to_gpu_GBps": 14.72,
+   "gpu_to_rngd_ms": [
+    0.566,
+    0.436,
+    0.433,
+    0.416,
+    0.425
+   ],
+   "rngd_to_gpu_ms": [
+    0.582,
+    0.329,
+    0.272,
+    0.285,
+    0.261
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "cached",
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.4,
+   "rngd_to_gpu_GBps": 17.39,
+   "gpu_to_rngd_ms": [
+    1.802,
+    1.613,
+    2.006,
+    1.6,
+    1.611
+   ],
+   "rngd_to_gpu_ms": [
+    1.324,
+    1.022,
+    0.965,
+    0.948,
+    0.942
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "cached",
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.17,
+   "rngd_to_gpu_GBps": 17.96,
+   "gpu_to_rngd_ms": [
+    7.316,
+    7.712,
+    7.26,
+    7.054,
+    7.907
+   ],
+   "rngd_to_gpu_ms": [
+    4.249,
+    3.807,
+    3.681,
+    3.737,
+    3.736
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "cached",
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.37,
+   "rngd_to_gpu_GBps": 18.44,
+   "gpu_to_rngd_ms": [
+    22.606,
+    21.325,
+    21.699,
+    21.54,
+    22.018
+   ],
+   "rngd_to_gpu_ms": [
+    15.091,
+    14.452,
+    14.555,
+    14.976,
+    14.363
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "cached",
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.07,
+   "rngd_to_gpu_GBps": 20.79,
+   "gpu_to_rngd_ms": [
+    76.529,
+    76.322,
+    76.311,
+    75.66,
+    74.878
+   ],
+   "rngd_to_gpu_ms": [
+    51.636,
+    50.991,
+    51.964,
+    51.758,
+    51.107
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "export-per-transfer",
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 7.07,
+   "rngd_to_gpu_GBps": 7.63,
+   "gpu_to_rngd_ms": [
+    0.634,
+    0.342,
+    0.297,
+    0.288,
+    0.287
+   ],
+   "rngd_to_gpu_ms": [
+    0.531,
+    0.376,
+    0.275,
+    0.247,
+    0.235
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "export-per-transfer",
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 8.06,
+   "rngd_to_gpu_GBps": 11.37,
+   "gpu_to_rngd_ms": [
+    0.638,
+    0.552,
+    0.521,
+    0.515,
+    0.501
+   ],
+   "rngd_to_gpu_ms": [
+    0.647,
+    0.44,
+    0.369,
+    0.354,
+    0.329
+   ],
+   "bar_pages_checked": 63,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "export-per-transfer",
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 9.91,
+   "rngd_to_gpu_GBps": 15.66,
+   "gpu_to_rngd_ms": [
+    2.006,
+    1.874,
+    1.693,
+    1.693,
+    1.682
+   ],
+   "rngd_to_gpu_ms": [
+    1.237,
+    1.112,
+    1.071,
+    1.023,
+    1.032
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "export-per-transfer",
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.05,
+   "rngd_to_gpu_GBps": 16.97,
+   "gpu_to_rngd_ms": [
+    7.84,
+    7.251,
+    7.411,
+    7.104,
+    7.514
+   ],
+   "rngd_to_gpu_ms": [
+    4.464,
+    4.092,
+    3.954,
+    3.763,
+    3.727
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "export-per-transfer",
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.15,
+   "rngd_to_gpu_GBps": 18.11,
+   "gpu_to_rngd_ms": [
+    23.681,
+    21.221,
+    21.295,
+    22.095,
+    22.525
+   ],
+   "rngd_to_gpu_ms": [
+    15.243,
+    14.822,
+    14.641,
+    14.972,
+    14.729
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "export-per-transfer",
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.14,
+   "rngd_to_gpu_GBps": 20.85,
+   "gpu_to_rngd_ms": [
+    76.478,
+    75.963,
+    75.195,
+    75.831,
+    77.088
+   ],
+   "rngd_to_gpu_ms": [
+    51.879,
+    51.484,
+    51.244,
+    51.851,
+    51.499
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "one-1GiB-export",
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 0.25,
+   "rngd_to_gpu_GBps": 0.27,
+   "gpu_to_rngd_ms": [
+    8.764,
+    8.306,
+    7.989,
+    8.592,
+    7.903
+   ],
+   "rngd_to_gpu_ms": [
+    9.246,
+    8.752,
+    7.844,
+    7.822,
+    7.601
+   ],
+   "bar_pages_checked": 59,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "one-1GiB-export",
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 0.47,
+   "rngd_to_gpu_GBps": 0.52,
+   "gpu_to_rngd_ms": [
+    9.514,
+    7.75,
+    8.989,
+    8.518,
+    9.354
+   ],
+   "rngd_to_gpu_ms": [
+    7.882,
+    8.454,
+    8.307,
+    8.099,
+    7.813
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "one-1GiB-export",
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 1.72,
+   "rngd_to_gpu_GBps": 1.84,
+   "gpu_to_rngd_ms": [
+    10.872,
+    10.588,
+    9.448,
+    9.781,
+    9.283
+   ],
+   "rngd_to_gpu_ms": [
+    9.081,
+    9.093,
+    8.845,
+    10.716,
+    9.302
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "one-1GiB-export",
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 4.3,
+   "rngd_to_gpu_GBps": 5.95,
+   "gpu_to_rngd_ms": [
+    16.978,
+    15.594,
+    15.357,
+    14.838,
+    16.417
+   ],
+   "rngd_to_gpu_ms": [
+    11.897,
+    12.648,
+    10.667,
+    11.283,
+    10.688
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "one-1GiB-export",
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 9.0,
+   "rngd_to_gpu_GBps": 13.01,
+   "gpu_to_rngd_ms": [
+    33.183,
+    29.833,
+    29.958,
+    29.032,
+    29.192
+   ],
+   "rngd_to_gpu_ms": [
+    21.578,
+    19.854,
+    19.91,
+    20.631,
+    21.89
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "variant": "one-1GiB-export",
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 12.74,
+   "rngd_to_gpu_GBps": 14.33,
+   "gpu_to_rngd_ms": [
+    84.301,
+    83.243,
+    88.557,
+    84.467,
+    83.196
+   ],
+   "rngd_to_gpu_ms": [
+    74.951,
+    78.659,
+    77.672,
+    72.494,
+    74.886
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  }
+ ],
+ "depth": [
+  {
+   "queue_depth": 1,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 5.29,
+   "rngd_to_gpu_GBps": 9.74,
+   "gpu_to_rngd_ms": [
+    0.558,
+    0.396,
+    0.415,
+    0.256,
+    0.237
+   ],
+   "rngd_to_gpu_ms": [
+    0.423,
+    0.269,
+    0.215,
+    0.167,
+    0.16
+   ],
+   "bar_pages_checked": 63,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 1,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 6.61,
+   "rngd_to_gpu_GBps": 14.56,
+   "gpu_to_rngd_ms": [
+    0.634,
+    0.473,
+    0.46,
+    0.635,
+    0.646
+   ],
+   "rngd_to_gpu_ms": [
+    0.853,
+    0.335,
+    0.288,
+    0.288,
+    0.265
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 1,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.34,
+   "rngd_to_gpu_GBps": 17.16,
+   "gpu_to_rngd_ms": [
+    1.777,
+    1.647,
+    1.614,
+    1.616,
+    1.623
+   ],
+   "rngd_to_gpu_ms": [
+    1.268,
+    1.023,
+    0.978,
+    0.959,
+    0.963
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 1,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.18,
+   "rngd_to_gpu_GBps": 17.45,
+   "gpu_to_rngd_ms": [
+    7.313,
+    7.332,
+    7.153,
+    7.631,
+    7.227
+   ],
+   "rngd_to_gpu_ms": [
+    4.043,
+    3.791,
+    3.717,
+    3.845,
+    3.859
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 1,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 8.24,
+   "rngd_to_gpu_GBps": 14.87,
+   "gpu_to_rngd_ms": [
+    33.846,
+    31.632,
+    32.587,
+    32.864,
+    32.104
+   ],
+   "rngd_to_gpu_ms": [
+    18.681,
+    17.791,
+    17.953,
+    18.706,
+    18.052
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 1,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 8.33,
+   "rngd_to_gpu_GBps": 14.62,
+   "gpu_to_rngd_ms": [
+    129.118,
+    128.934,
+    129.556,
+    127.058,
+    128.647
+   ],
+   "rngd_to_gpu_ms": [
+    73.576,
+    72.856,
+    71.054,
+    73.435,
+    73.705
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 2,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 9.0,
+   "rngd_to_gpu_GBps": 12.43,
+   "gpu_to_rngd_ms": [
+    0.417,
+    0.251,
+    0.23,
+    0.233,
+    0.23
+   ],
+   "rngd_to_gpu_ms": [
+    0.496,
+    0.207,
+    0.169,
+    0.16,
+    0.156
+   ],
+   "bar_pages_checked": 59,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 2,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.38,
+   "rngd_to_gpu_GBps": 15.27,
+   "gpu_to_rngd_ms": [
+    0.623,
+    0.465,
+    0.447,
+    0.441,
+    0.427
+   ],
+   "rngd_to_gpu_ms": [
+    0.486,
+    0.321,
+    0.274,
+    0.275,
+    0.261
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 2,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 9.71,
+   "rngd_to_gpu_GBps": 16.96,
+   "gpu_to_rngd_ms": [
+    1.729,
+    1.604,
+    1.744,
+    1.952,
+    1.68
+   ],
+   "rngd_to_gpu_ms": [
+    1.204,
+    1.003,
+    0.989,
+    0.952,
+    0.952
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 2,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.19,
+   "rngd_to_gpu_GBps": 17.68,
+   "gpu_to_rngd_ms": [
+    7.932,
+    7.301,
+    7.52,
+    7.065,
+    7.031
+   ],
+   "rngd_to_gpu_ms": [
+    4.192,
+    3.797,
+    3.842,
+    3.712,
+    3.774
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 2,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.26,
+   "rngd_to_gpu_GBps": 18.22,
+   "gpu_to_rngd_ms": [
+    21.999,
+    22.16,
+    21.84,
+    21.901,
+    21.469
+   ],
+   "rngd_to_gpu_ms": [
+    15.306,
+    14.736,
+    14.743,
+    14.505,
+    14.659
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 2,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 13.18,
+   "rngd_to_gpu_GBps": 20.64,
+   "gpu_to_rngd_ms": [
+    82.874,
+    81.444,
+    80.387,
+    81.488,
+    79.702
+   ],
+   "rngd_to_gpu_ms": [
+    53.282,
+    51.999,
+    52.957,
+    51.589,
+    52.014
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 4,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 6.58,
+   "rngd_to_gpu_GBps": 13.83,
+   "gpu_to_rngd_ms": [
+    0.454,
+    0.378,
+    0.319,
+    0.318,
+    0.299
+   ],
+   "rngd_to_gpu_ms": [
+    0.381,
+    0.195,
+    0.152,
+    0.148,
+    0.147
+   ],
+   "bar_pages_checked": 60,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 4,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.84,
+   "rngd_to_gpu_GBps": 14.6,
+   "gpu_to_rngd_ms": [
+    0.578,
+    0.451,
+    0.426,
+    0.424,
+    0.424
+   ],
+   "rngd_to_gpu_ms": [
+    0.571,
+    0.327,
+    0.274,
+    0.287,
+    0.272
+   ],
+   "bar_pages_checked": 62,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 4,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.41,
+   "rngd_to_gpu_GBps": 17.86,
+   "gpu_to_rngd_ms": [
+    1.834,
+    1.612,
+    1.619,
+    1.598,
+    1.606
+   ],
+   "rngd_to_gpu_ms": [
+    1.174,
+    0.989,
+    0.932,
+    0.939,
+    0.931
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 4,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.02,
+   "rngd_to_gpu_GBps": 16.99,
+   "gpu_to_rngd_ms": [
+    7.499,
+    7.101,
+    7.011,
+    7.468,
+    7.44
+   ],
+   "rngd_to_gpu_ms": [
+    4.252,
+    3.962,
+    3.949,
+    3.901,
+    3.914
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 4,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 11.69,
+   "rngd_to_gpu_GBps": 17.7,
+   "gpu_to_rngd_ms": [
+    22.959,
+    22.389,
+    23.127,
+    22.129,
+    23.224
+   ],
+   "rngd_to_gpu_ms": [
+    15.633,
+    15.166,
+    15.312,
+    14.522,
+    14.567
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 4,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.19,
+   "rngd_to_gpu_GBps": 20.95,
+   "gpu_to_rngd_ms": [
+    75.677,
+    75.89,
+    75.847,
+    75.3,
+    75.283
+   ],
+   "rngd_to_gpu_ms": [
+    51.571,
+    51.868,
+    51.256,
+    50.81,
+    50.849
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 8,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 8.5,
+   "rngd_to_gpu_GBps": 12.71,
+   "gpu_to_rngd_ms": [
+    0.424,
+    0.256,
+    0.247,
+    0.238,
+    0.24
+   ],
+   "rngd_to_gpu_ms": [
+    0.566,
+    0.193,
+    0.165,
+    0.144,
+    0.143
+   ],
+   "bar_pages_checked": 60,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 8,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 9.71,
+   "rngd_to_gpu_GBps": 15.62,
+   "gpu_to_rngd_ms": [
+    0.626,
+    0.451,
+    0.431,
+    0.426,
+    0.432
+   ],
+   "rngd_to_gpu_ms": [
+    0.61,
+    0.313,
+    0.267,
+    0.268,
+    0.268
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 8,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.38,
+   "rngd_to_gpu_GBps": 17.49,
+   "gpu_to_rngd_ms": [
+    2.194,
+    1.595,
+    2.004,
+    1.616,
+    1.596
+   ],
+   "rngd_to_gpu_ms": [
+    1.16,
+    1.081,
+    0.959,
+    0.947,
+    0.93
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 8,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 8.99,
+   "rngd_to_gpu_GBps": 17.25,
+   "gpu_to_rngd_ms": [
+    8.058,
+    7.533,
+    7.155,
+    7.124,
+    7.464
+   ],
+   "rngd_to_gpu_ms": [
+    4.07,
+    3.791,
+    3.85,
+    3.891,
+    3.925
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 8,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.32,
+   "rngd_to_gpu_GBps": 18.02,
+   "gpu_to_rngd_ms": [
+    21.348,
+    21.789,
+    21.789,
+    23.0,
+    21.228
+   ],
+   "rngd_to_gpu_ms": [
+    14.899,
+    15.119,
+    14.534,
+    15.052,
+    14.784
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "queue_depth": 8,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 13.37,
+   "rngd_to_gpu_GBps": 20.98,
+   "gpu_to_rngd_ms": [
+    80.31,
+    80.061,
+    80.341,
+    80.307,
+    79.464
+   ],
+   "rngd_to_gpu_ms": [
+    51.543,
+    50.963,
+    51.039,
+    51.189,
+    51.886
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  }
+ ],
+ "slices": [
+  {
+   "slice_MiB": 16,
+   "exact_exports": false,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 5.47,
+   "rngd_to_gpu_GBps": 8.14,
+   "gpu_to_rngd_ms": [
+    0.597,
+    0.41,
+    0.384,
+    0.38,
+    0.371
+   ],
+   "rngd_to_gpu_ms": [
+    0.577,
+    0.287,
+    0.257,
+    0.244,
+    0.241
+   ],
+   "bar_pages_checked": 60,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 16,
+   "exact_exports": false,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 7.9,
+   "rngd_to_gpu_GBps": 10.92,
+   "gpu_to_rngd_ms": [
+    0.575,
+    0.525,
+    0.519,
+    0.531,
+    0.537
+   ],
+   "rngd_to_gpu_ms": [
+    0.522,
+    0.424,
+    0.384,
+    0.362,
+    0.366
+   ],
+   "bar_pages_checked": 61,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 16,
+   "exact_exports": false,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 10.36,
+   "rngd_to_gpu_GBps": 16.95,
+   "gpu_to_rngd_ms": [
+    1.687,
+    1.619,
+    1.618,
+    1.604,
+    1.626
+   ],
+   "rngd_to_gpu_ms": [
+    1.137,
+    1.05,
+    0.99,
+    0.99,
+    0.98
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 16,
+   "exact_exports": false,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 13.01,
+   "rngd_to_gpu_GBps": 20.61,
+   "gpu_to_rngd_ms": [
+    5.158,
+    5.829,
+    4.549,
+    4.597,
+    5.344
+   ],
+   "rngd_to_gpu_ms": [
+    3.578,
+    3.344,
+    3.256,
+    3.235,
+    3.217
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 16,
+   "exact_exports": false,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 14.92,
+   "rngd_to_gpu_GBps": 21.49,
+   "gpu_to_rngd_ms": [
+    19.559,
+    18.006,
+    17.304,
+    17.906,
+    17.996
+   ],
+   "rngd_to_gpu_ms": [
+    13.186,
+    12.408,
+    12.566,
+    12.444,
+    12.493
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 16,
+   "exact_exports": false,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.84,
+   "rngd_to_gpu_GBps": 21.93,
+   "gpu_to_rngd_ms": [
+    85.627,
+    70.704,
+    73.205,
+    72.373,
+    72.225
+   ],
+   "rngd_to_gpu_ms": [
+    50.639,
+    48.926,
+    48.702,
+    48.959,
+    48.967
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 64,
+   "exact_exports": false,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 2.44,
+   "rngd_to_gpu_GBps": 3.11,
+   "gpu_to_rngd_ms": [
+    1.035,
+    0.86,
+    0.845,
+    0.867,
+    0.822
+   ],
+   "rngd_to_gpu_ms": [
+    0.999,
+    0.736,
+    0.675,
+    0.672,
+    0.661
+   ],
+   "bar_pages_checked": 62,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 64,
+   "exact_exports": false,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 4.23,
+   "rngd_to_gpu_GBps": 4.53,
+   "gpu_to_rngd_ms": [
+    1.008,
+    0.99,
+    0.973,
+    0.98,
+    0.994
+   ],
+   "rngd_to_gpu_ms": [
+    1.009,
+    0.939,
+    0.926,
+    0.916,
+    0.896
+   ],
+   "bar_pages_checked": 63,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 64,
+   "exact_exports": false,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 8.16,
+   "rngd_to_gpu_GBps": 11.71,
+   "gpu_to_rngd_ms": [
+    2.168,
+    2.041,
+    2.057,
+    2.11,
+    2.056
+   ],
+   "rngd_to_gpu_ms": [
+    1.691,
+    1.487,
+    1.433,
+    1.366,
+    1.406
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 64,
+   "exact_exports": false,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 9.29,
+   "rngd_to_gpu_GBps": 17.18,
+   "gpu_to_rngd_ms": [
+    7.995,
+    7.223,
+    7.195,
+    7.585,
+    7.131
+   ],
+   "rngd_to_gpu_ms": [
+    4.184,
+    4.009,
+    3.907,
+    3.881,
+    3.836
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 64,
+   "exact_exports": false,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 13.99,
+   "rngd_to_gpu_GBps": 20.43,
+   "gpu_to_rngd_ms": [
+    19.533,
+    18.975,
+    19.182,
+    20.435,
+    18.974
+   ],
+   "rngd_to_gpu_ms": [
+    13.366,
+    13.157,
+    13.08,
+    13.138,
+    13.058
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 64,
+   "exact_exports": false,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.6,
+   "rngd_to_gpu_GBps": 21.58,
+   "gpu_to_rngd_ms": [
+    74.456,
+    73.52,
+    72.284,
+    72.884,
+    74.013
+   ],
+   "rngd_to_gpu_ms": [
+    50.333,
+    49.305,
+    49.778,
+    49.523,
+    49.746
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 256,
+   "exact_exports": false,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 0.83,
+   "rngd_to_gpu_GBps": 0.89,
+   "gpu_to_rngd_ms": [
+    2.681,
+    2.385,
+    2.513,
+    2.463,
+    2.65
+   ],
+   "rngd_to_gpu_ms": [
+    2.57,
+    2.211,
+    2.292,
+    2.344,
+    2.447
+   ],
+   "bar_pages_checked": 60,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 256,
+   "exact_exports": false,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 1.42,
+   "rngd_to_gpu_GBps": 1.51,
+   "gpu_to_rngd_ms": [
+    2.957,
+    2.978,
+    2.854,
+    2.973,
+    2.6
+   ],
+   "rngd_to_gpu_ms": [
+    2.453,
+    2.623,
+    2.886,
+    2.769,
+    2.788
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 256,
+   "exact_exports": false,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 4.39,
+   "rngd_to_gpu_GBps": 5.47,
+   "gpu_to_rngd_ms": [
+    3.966,
+    3.912,
+    3.819,
+    3.765,
+    3.75
+   ],
+   "rngd_to_gpu_ms": [
+    3.482,
+    3.149,
+    3.066,
+    2.858,
+    3.02
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 256,
+   "exact_exports": false,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 7.72,
+   "rngd_to_gpu_GBps": 12.22,
+   "gpu_to_rngd_ms": [
+    8.904,
+    9.113,
+    8.688,
+    8.555,
+    8.497
+   ],
+   "rngd_to_gpu_ms": [
+    5.493,
+    5.335,
+    5.704,
+    5.608,
+    5.204
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 256,
+   "exact_exports": false,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 12.14,
+   "rngd_to_gpu_GBps": 18.26,
+   "gpu_to_rngd_ms": [
+    22.103,
+    22.5,
+    22.115,
+    21.786,
+    21.516
+   ],
+   "rngd_to_gpu_ms": [
+    14.7,
+    14.817,
+    14.531,
+    14.707,
+    14.537
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  },
+  {
+   "slice_MiB": 256,
+   "exact_exports": false,
+   "MiB": 1024,
+   "gpu_to_rngd_GBps": 14.16,
+   "rngd_to_gpu_GBps": 20.85,
+   "gpu_to_rngd_ms": [
+    77.704,
+    75.879,
+    75.382,
+    75.44,
+    75.831
+   ],
+   "rngd_to_gpu_ms": [
+    51.682,
+    51.504,
+    51.214,
+    51.457,
+    51.822
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true
+  }
+ ],
+ "passed": true
+}

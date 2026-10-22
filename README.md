@@ -249,7 +249,7 @@ compiled artifact and available memory; they are not interchangeable runtime swi
 | **Layer / kind** | `l2-memory` library, used inside a serving pod ([`ai-rm.yaml`](ai-rm.yaml)) |
 | **Provides** | `KVTransport` (`TransferPlan` / `CopySession` / `RngdPdmaBackend`, llm-d stage broker) |
 | **Uses** | No other ai-rm component. The KONI examples load the `rngd_pd` package from `rngd-pd` through `PYTHONPATH` for model execution |
-| **Adapter** | `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` name `p2p` |
+| **Adapter** | `hetero_p2p.airm:P2PTransport`, entry point `airm.kv_transports` name `p2p`; GPU ↔ RNGD: `hetero_p2p.airm_dmabuf:DmabufKVTransport`, name `p2p-dmabuf` ([GPU ↔ RNGD](docs/gpu-rngd.md)) |
 | **NIXL backend** | `HETERO_NPU` plugin (`nixl_plugin/`, `libplugin_HETERO_NPU.so`): RNGD → ATOM DMA-BUF through `nixl_agent` ([design](docs/nixl-backend.md)) |
 | **Metrics** | `kv_transfer_ms`, `kv_transfer_gbps` (tag `kv_transport=p2p`) |
 | **KPIs** | Heterogeneous resource count (RNGD + ATOM together); power efficiency (board energy integrated over HTTP intervals by `hetero_p2p.energy`) |
@@ -412,6 +412,7 @@ source revisions and measurement conditions.
 | 🔧 **Use the library** | [Serving library API](docs/SERVING_LIBRARY.md) · [Support and ownership](docs/SUPPORT.md) · [Batch pipeline](docs/BATCH_PIPELINE.md) |
 | 🔌 **Connect to llm-d** | [llm-d integration](docs/LLMD.md) · [HTTP batching](docs/HTTP_BATCHING.md) · [Length scheduling](docs/LENGTH_SCHEDULING.md) |
 | 🔁 **Use from NIXL** | [HETERO_NPU NIXL backend](docs/nixl-backend.md) |
+| 🟩 **GPU ↔ RNGD** | [DMA-BUF transport (`hetero_p2p.gpu`)](docs/gpu-rngd.md): RNGD PDMA to and from CUDA memory, 12–15 / 18–21 GB/s (GPU → RNGD / RNGD → GPU) at 1 GiB on all 4 pairs, NVIDIA open kernel module required |
 | 📊 **Check the evidence** | [Validation](docs/VALIDATION.md) · [Benchmarks](docs/benchmark-b4/RESULTS_KO.md) · [Research log](docs/OPTIMIZATION_RESEARCH_KO.md) |
 | 🧭 **ai-rm context** | [ai-rm](https://github.com/ai-computing/ai-rm) · [Optimus Prime consolidation plan](https://github.com/ai-computing/ai-rm/blob/master/docs/engine-integration.md) · [rm-core protocol](https://github.com/ai-computing/rm-core/blob/main/PROTOCOL.md) |
 
