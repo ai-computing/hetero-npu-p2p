@@ -4,7 +4,7 @@ layer: l2-memory
 kind: library
 summary: 같은 호스트의 RNGD→ATOM NPU 간 완료 확인형 KV cache P2P 전송 라이브러리
 maturity: experimental
-hardware: [RNGD, ATOM]
+hardware: [RNGD, ATOM, NVIDIA GPU]
 install:
   - python -m pip install -e .
 test:
@@ -12,6 +12,8 @@ test:
 adapters:
   - group: airm.kv_transports
     name: p2p                 # hetero_p2p.airm:P2PTransport
+  - group: airm.kv_transports
+    name: p2p-dmabuf          # hetero_p2p.airm_dmabuf:DmabufKVTransport (GPU <-> RNGD, NVIDIA open module)
 deploy:
   target: none                # 서빙 pod 안의 라이브러리. llm-d 연결은 로컬 stage 예제(examples/koni)뿐
   chart: null

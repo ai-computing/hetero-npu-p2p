@@ -1,96 +1,207 @@
 /* Completion-fenced RNGD PDMA <-> imported DMA-BUF (e.g. CUDA memory exported by the NVIDIA open kernel module).
- * CLI: device_path read|write plan_file descriptors_per_command queue_depth reps
- *   read : RNGD DRAM -> DMA-BUF (device -> peer)     write: DMA-BUF -> RNGD DRAM (peer -> device)
- * Plan rows: inherited_fd npu_dram_offset dmabuf_offset byte_count  (4 KiB aligned, <= 2 MiB). A command holds up to
- * descriptors_per_command consecutive rows of one FD (a new command starts where the FD changes).
- * No host data buffers and no host-copy fallback. Prints one JSON receipt; rc 0 only if every CQE completed.
+ *
+ * Shared library loaded in-process by hetero_p2p.gpu.RngdDmabufBackend (ctypes). One context = one RNGD PDMA
+ * device file and one io_uring that stay open across transfers, so a transfer costs no process start, no device
+ * open and no ring setup.
+ *
+ *   rd_open(path, queue_depth, &ctx)   open /dev/rngd/npuNch0, require NPU_PDMA_CAPS_DMABUF, set up the ring
+ *   rd_run(ctx, write, ...)            run commands with up to queue_depth in flight; return after every CQE
+ *   rd_close(ctx)
+ *
+ * write = 0: RNGD DRAM -> DMA-BUF (NPU_PDMA_URING_CMD_DMABUF_READ); write = 1: DMA-BUF -> RNGD DRAM (..._WRITE).
+ * Command c moves counts[c] consecutive descriptors through the DMA-BUF fds[c]. Descriptor i copies len[i] bytes
+ * between RNGD DRAM offset npu[i] and DMA-BUF offset off[i]; all 4 KiB aligned.
+ *
+ * The whole request is validated before the first submission (-EINVAL, nothing submitted). After a failed
+ * command no further command is submitted, but every submitted one is still reaped: rd_run never returns with
+ * DMA in flight. If the ring itself fails, the context refuses further work (-EIO).
+ *
+ * io_uring is used through raw syscalls (no liburing), with 128-byte SQEs as the driver's uring_cmd requires.
+ * No host data buffers and no host-copy fallback.
  */
 #include <stdint.h>
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <time.h>
-#include <liburing.h>
+#include <sys/syscall.h>
+#include <linux/io_uring.h>
 #include "npu_pdma_uapi.h"
 #include "npu_address_map.h"
-struct item { int fd; uint64_t npu,off,len,dev,ino; };
-static double now(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return t.tv_sec+t.tv_nsec*1e-9;}
-static int rejected(int line){fprintf(stderr,"plan validation rejected at line %d\n",line);return 2;}
-static int number(const char *s,uint64_t *v){char *e;errno=0;*v=strtoull(s,&e,0);return !errno&&*s&&!*e&&*s!='-';}
-int main(int argc,char **argv){
- unsigned int device_id; char extra_path; uint64_t batch,qd,reps;
- if(argc!=7||sscanf(argv[1],"/dev/rngd/npu%uch0%c",&device_id,&extra_path)!=1)return rejected(__LINE__);
- char expected[64];snprintf(expected,sizeof(expected),"/dev/rngd/npu%uch0",device_id);
- if(strcmp(expected,argv[1]))return rejected(__LINE__);
- int write_dev=!strcmp(argv[2],"write");
- if(!write_dev&&strcmp(argv[2],"read"))return rejected(__LINE__);
- if(!number(argv[4],&batch)||!batch||batch>64||!number(argv[5],&qd)||!qd||qd>16||!number(argv[6],&reps)||!reps||reps>100)
-  return rejected(__LINE__);
- const uint64_t limit=48ULL*1024*1024*1024-512ULL*1024*1024;
- FILE *f=fopen(argv[3],"r");if(!f)return rejected(__LINE__);
- size_t cap=1024,count=0;struct item *items=malloc(cap*sizeof *items);char line[256];uint64_t total=0;
- while(fgets(line,sizeof(line),f)){
-  struct item v;char extra;struct stat st;
-  if(count==8192||sscanf(line,"%d %"SCNu64" %"SCNu64" %"SCNu64" %c",&v.fd,&v.npu,&v.off,&v.len,&extra)!=4){fclose(f);return rejected(__LINE__);}
-  if(v.fd<0||!v.len||v.len>2097152||v.npu%4096||v.off%4096||v.len%4096||v.npu>limit-v.len||fstat(v.fd,&st)||st.st_size<0
-     ||v.len>(uint64_t)st.st_size||v.off>(uint64_t)st.st_size-v.len){fclose(f);return rejected(__LINE__);}
-  v.dev=(uint64_t)st.st_dev;v.ino=(uint64_t)st.st_ino;
-  if(count==cap){cap*=2;items=realloc(items,cap*sizeof *items);}
-  items[count++]=v;total+=v.len;
- }
- if(ferror(f)||!count){fclose(f);return rejected(__LINE__);}fclose(f);
- // writes into one destination must not overlap (RNGD ranges for write, DMA-BUF ranges for read)
- for(size_t i=0;i<count;i++)for(size_t j=0;j<i;j++){
-  uint64_t a=write_dev?items[i].npu:items[i].off,b=write_dev?items[j].npu:items[j].off;
-  int same=write_dev||(items[i].dev==items[j].dev&&items[i].ino==items[j].ino);
-  if(same&&a<b+items[j].len&&b<a+items[i].len)return rejected(__LINE__);
- }
- size_t *start=malloc((count+1)*sizeof *start),ncmd=0;
- for(size_t i=0,run=0;i<count;i++,run++){if(!i||items[i].fd!=items[i-1].fd||run==batch){start[ncmd++]=i;run=0;}}
- start[ncmd]=count;
- struct scatter_io_desc *desc=calloc(count,sizeof *desc);
- for(size_t i=0;i<count;i++){
-  uint64_t npu=NPU_DRAM_INWARD_ADDR+items[i].npu;
-  desc[i]=(struct scatter_io_desc){.src=write_dev?items[i].off:npu,.dst=write_dev?npu:items[i].off,.len=items[i].len};
- }
- int fd=open(argv[1],O_RDWR|O_CLOEXEC);if(fd<0){perror("open");return 3;}
- int caps=ioctl(fd,NPU_PDMA_GET_CAPS);if(caps<0||!(caps&NPU_PDMA_CAPS_DMABUF)){close(fd);return 3;}
- struct io_uring ring;struct io_uring_params params={0};params.flags=IORING_SETUP_SQE128;
- int ret=io_uring_queue_init_params((unsigned)qd*2,&ring,&params);if(ret<0){close(fd);return 4;}
- size_t completed=0;int result=0;double first=0,best=1e30;
- printf("{\"direction\":\"%s\",\"seconds\":[",argv[2]);
- for(uint64_t r=0;r<reps&&!result;r++){
-  size_t sent=0,done=0;double t0=now();
-  while(done<ncmd&&!result){
-   while(sent<ncmd&&sent-done<qd){
-    size_t i=start[sent],n=start[sent+1]-start[sent];
-    struct npu_pdma_dmabuf_io command={.dmabuf_fd=items[i].fd,.desc_count=(uint32_t)n,.desc_addr=(uint64_t)(uintptr_t)(desc+i)};
-    struct io_uring_sqe *sqe=io_uring_get_sqe(&ring);
-    io_uring_prep_rw(IORING_OP_URING_CMD,sqe,fd,NULL,0,0);
-    sqe->cmd_op=write_dev?NPU_PDMA_URING_CMD_DMABUF_WRITE:NPU_PDMA_URING_CMD_DMABUF_READ;
-    memcpy(sqe->cmd,&command,sizeof(command));sqe->user_data=sent+1;sent++;
-   }
-   if((ret=io_uring_submit(&ring))<0){result=ret;break;}
-   struct io_uring_cqe *cqe=NULL;
-   do{ret=io_uring_wait_cqe(&ring,&cqe);}while(ret==-EINTR);
-   if(ret<0){result=ret;break;}
-   if(cqe->res)result=cqe->res;
-   io_uring_cqe_seen(&ring,cqe);done++;
+
+#define RD_ABI 1
+#define RD_OP_URING_CMD 46               /* IORING_OP_URING_CMD (Linux >= 5.19) */
+#define RD_SETUP_SQE128 (1U << 10)       /* IORING_SETUP_SQE128 */
+#define RD_SQE_BYTES 128
+#define RD_PAGE 4096ULL
+#define RD_MAX_DEPTH 64U
+#define RD_MAX_CMD_BYTES 0xFFFFFFFFULL   /* the driver sums one command's descriptors into a u32 */
+/* RNGD DRAM usable for PDMA: NPU_DRAM_SIZE - NPU_FW_SIZE (npu_pdma_uring_cmd.c), as rngd_pdma.c */
+#define RD_DRAM_LIMIT (48ULL * 1024 * 1024 * 1024 - 512ULL * 1024 * 1024)
+
+struct rd_cqe { uint64_t user_data; int32_t res; uint32_t flags; };
+
+struct rd_ctx {
+  int dev, ring, broken;
+  unsigned depth;
+  void *sq_map, *cq_map; size_t sq_len, cq_len;
+  uint8_t *sqes; size_t sqes_len;
+  unsigned *sq_head, *sq_tail, *sq_mask, *sq_array, *cq_head, *cq_tail, *cq_mask;
+  struct rd_cqe *cqes;
+};
+
+int rd_abi(void) { return RD_ABI; }
+
+static int enter(int fd, unsigned submit, unsigned wait) {
+  long r = syscall(__NR_io_uring_enter, fd, submit, wait, wait ? IORING_ENTER_GETEVENTS : 0, NULL, 0);
+  return r < 0 ? -errno : (int)r;
+}
+
+void rd_close(struct rd_ctx *c) {
+  if (!c) return;
+  if (c->sqes && c->sqes != MAP_FAILED) munmap(c->sqes, c->sqes_len);
+  if (c->cq_map && c->cq_map != MAP_FAILED && c->cq_map != c->sq_map) munmap(c->cq_map, c->cq_len);
+  if (c->sq_map && c->sq_map != MAP_FAILED) munmap(c->sq_map, c->sq_len);
+  if (c->ring >= 0) close(c->ring);
+  if (c->dev >= 0) close(c->dev);
+  free(c);
+}
+
+int rd_open(const char *path, unsigned depth, struct rd_ctx **out) {
+  unsigned id; char extra; char expected[64];
+  if (!path || !out || !depth || depth > RD_MAX_DEPTH) return -EINVAL;
+  if (sscanf(path, "/dev/rngd/npu%uch0%c", &id, &extra) != 1) return -EINVAL;
+  snprintf(expected, sizeof expected, "/dev/rngd/npu%uch0", id);
+  if (strcmp(expected, path)) return -EINVAL;
+  struct rd_ctx *c = calloc(1, sizeof *c);
+  if (!c) return -ENOMEM;
+  c->dev = c->ring = -1; c->depth = depth;
+  int err;
+  if ((c->dev = open(path, O_RDWR | O_CLOEXEC)) < 0) { err = -errno; goto fail; }
+  int caps = ioctl(c->dev, NPU_PDMA_GET_CAPS);
+  if (caps < 0 || !(caps & NPU_PDMA_CAPS_DMABUF)) { err = -EOPNOTSUPP; goto fail; }
+  struct io_uring_params p; memset(&p, 0, sizeof p); p.flags = RD_SETUP_SQE128;
+  long r = syscall(__NR_io_uring_setup, depth, &p);
+  if (r < 0) { err = -errno; goto fail; }
+  c->ring = (int)r;
+  c->sq_len = p.sq_off.array + p.sq_entries * sizeof(unsigned);
+  c->cq_len = p.cq_off.cqes + p.cq_entries * sizeof(struct rd_cqe);
+  if (p.features & IORING_FEAT_SINGLE_MMAP) { if (c->cq_len > c->sq_len) c->sq_len = c->cq_len; c->cq_len = c->sq_len; }
+  c->sq_map = mmap(NULL, c->sq_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, c->ring, IORING_OFF_SQ_RING);
+  if (c->sq_map == MAP_FAILED) { err = -errno; goto fail; }
+  if (p.features & IORING_FEAT_SINGLE_MMAP) c->cq_map = c->sq_map;
+  else {
+    c->cq_map = mmap(NULL, c->cq_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, c->ring, IORING_OFF_CQ_RING);
+    if (c->cq_map == MAP_FAILED) { err = -errno; goto fail; }
   }
-  // drain what is still in flight before reporting (never leave commands outstanding)
-  while(done<sent){struct io_uring_cqe *cqe=NULL;do{ret=io_uring_wait_cqe(&ring,&cqe);}while(ret==-EINTR);
-   if(ret<0){result=ret;break;} if(cqe->res&&!result)result=cqe->res; io_uring_cqe_seen(&ring,cqe);done++;}
-  double dt=now()-t0;if(!r)first=dt;if(dt<best)best=dt;
-  printf("%s%.9f",r?",":"",dt);if(!result)completed+=done;
- }
- printf("],\"cqe_result\":%d,\"completed\":%zu,\"requested\":%zu,\"bytes_requested\":%"PRIu64",\"first_seconds\":%.9f,\"best_seconds\":%.9f}\n",
-        result,completed,ncmd*(size_t)reps,total,first,best);
- io_uring_queue_exit(&ring);close(fd);free(desc);free(items);free(start);
- return result==0&&completed==ncmd*(size_t)reps?0:5;
+  c->sqes_len = (size_t)p.sq_entries * RD_SQE_BYTES;
+  c->sqes = mmap(NULL, c->sqes_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, c->ring, IORING_OFF_SQES);
+  if (c->sqes == MAP_FAILED) { err = -errno; goto fail; }
+  uint8_t *sq = c->sq_map, *cq = c->cq_map;
+  c->sq_head = (unsigned *)(sq + p.sq_off.head); c->sq_tail = (unsigned *)(sq + p.sq_off.tail);
+  c->sq_mask = (unsigned *)(sq + p.sq_off.ring_mask); c->sq_array = (unsigned *)(sq + p.sq_off.array);
+  c->cq_head = (unsigned *)(cq + p.cq_off.head); c->cq_tail = (unsigned *)(cq + p.cq_off.tail);
+  c->cq_mask = (unsigned *)(cq + p.cq_off.ring_mask); c->cqes = (struct rd_cqe *)(cq + p.cq_off.cqes);
+  if (p.sq_entries < depth || p.cq_entries < depth) { err = -EINVAL; goto fail; }
+  *out = c;
+  return 0;
+fail:
+  rd_close(c);
+  return err;
+}
+
+/* Reap every available CQE; returns how many. */
+static unsigned reap(struct rd_ctx *c, int *first_error, uint64_t *completed) {
+  unsigned head = *c->cq_head, n = 0;
+  while (head != __atomic_load_n(c->cq_tail, __ATOMIC_ACQUIRE)) {
+    struct rd_cqe *e = &c->cqes[head & *c->cq_mask];
+    if (e->res == 0) (*completed)++;
+    else if (!*first_error) *first_error = e->res < 0 ? e->res : -EIO;
+    head++; n++;
+  }
+  __atomic_store_n(c->cq_head, head, __ATOMIC_RELEASE);
+  return n;
+}
+
+int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const uint32_t *counts,
+           uint64_t ndesc, const uint64_t *npu, const uint64_t *off, const uint64_t *len, uint64_t *completed) {
+  if (!c || !completed) return -EINVAL;
+  *completed = 0;
+  if (c->broken) return -EIO;
+  if (!ncmd || !ndesc || !fds || !counts || !npu || !off || !len) return -EINVAL;
+  /* Validate everything before the first submission. */
+  uint64_t first = 0;
+  for (uint32_t k = 0; k < ncmd; k++) {
+    struct stat st; uint64_t bytes = 0;
+    if (!counts[k] || counts[k] > ndesc - first || fstat(fds[k], &st) || st.st_size <= 0) return -EINVAL;
+    for (uint64_t i = first; i < first + counts[k]; i++) {
+      if (!len[i] || npu[i] % RD_PAGE || off[i] % RD_PAGE || len[i] % RD_PAGE) return -EINVAL;
+      if (len[i] > RD_DRAM_LIMIT || npu[i] > RD_DRAM_LIMIT - len[i]) return -EINVAL;
+      if (len[i] > (uint64_t)st.st_size || off[i] > (uint64_t)st.st_size - len[i]) return -EINVAL;
+      bytes += len[i];
+      if (bytes > RD_MAX_CMD_BYTES) return -EINVAL;
+    }
+    first += counts[k];
+  }
+  if (first != ndesc) return -EINVAL;
+  struct scatter_io_desc *desc = malloc(ndesc * sizeof *desc);
+  if (!desc) return -ENOMEM;
+  for (uint64_t i = 0; i < ndesc; i++) {
+    uint64_t dev = NPU_DRAM_INWARD_ADDR + npu[i];
+    desc[i] = (struct scatter_io_desc){.src = write ? off[i] : dev, .dst = write ? dev : off[i], .len = len[i]};
+  }
+  /* The descriptor array must outlive every CQE: the driver may read it after submission (io-wq punt). */
+  uint32_t prepared = 0; uint64_t done = 0; int err = 0;
+  unsigned base = __atomic_load_n(c->sq_head, __ATOMIC_ACQUIRE), tail = *c->sq_tail;
+  first = 0;
+  for (;;) {
+    while (!err && prepared < ncmd && prepared - done < c->depth) {
+      unsigned slot = tail & *c->sq_mask;
+      uint8_t *s = c->sqes + (size_t)slot * RD_SQE_BYTES;
+      struct npu_pdma_dmabuf_io io = {.dmabuf_fd = fds[prepared], .desc_count = counts[prepared],
+                                      .desc_addr = (uint64_t)(uintptr_t)(desc + first)};
+      memset(s, 0, RD_SQE_BYTES);
+      s[0] = RD_OP_URING_CMD;                                   /* opcode */
+      memcpy(s + 4, &c->dev, 4);                                /* fd */
+      uint32_t op = write ? NPU_PDMA_URING_CMD_DMABUF_WRITE : NPU_PDMA_URING_CMD_DMABUF_READ;
+      memcpy(s + 8, &op, 4);                                    /* cmd_op */
+      uint64_t user = (uint64_t)prepared + 1;
+      memcpy(s + 32, &user, 8);                                 /* user_data */
+      memcpy(s + 48, &io, sizeof io);                           /* cmd[] */
+      c->sq_array[slot] = slot;
+      first += counts[prepared]; prepared++; tail++;
+      __atomic_store_n(c->sq_tail, tail, __ATOMIC_RELEASE);
+    }
+    unsigned unsubmitted = (base + prepared) - __atomic_load_n(c->sq_head, __ATOMIC_ACQUIRE);
+    unsigned consumed = prepared - unsubmitted;
+    done += reap(c, &err, completed);
+    if (!err && prepared < ncmd && prepared - done < c->depth) continue;   /* a slot freed: fill it first */
+    if (done == consumed && (err || prepared == ncmd) && !unsubmitted) break;
+    if (err && done == consumed) {                              /* failed: never submit the rest */
+      c->broken = 1;                                            /* prepared SQEs stay in the ring */
+      break;
+    }
+    /* Wait only when a command is (or is about to be) in the kernel: never block on an empty ring. */
+    int r = enter(c->ring, err ? 0 : unsubmitted, done < consumed || (!err && unsubmitted) ? 1 : 0);
+    if (r < 0 && r != -EINTR && r != -EAGAIN && r != -EBUSY) {
+      if (!err) err = r;
+      unsubmitted = (base + prepared) - __atomic_load_n(c->sq_head, __ATOMIC_ACQUIRE);
+      consumed = prepared - unsubmitted;
+      /* The ring is unusable: wait for what the kernel already took, then refuse further work. */
+      while (done < consumed) {
+        int w = enter(c->ring, 0, 1);
+        done += reap(c, &err, completed);
+        if (w < 0 && w != -EINTR && w != -EAGAIN && w != -EBUSY && done < consumed) { c->broken = 1; return err; }  /* leak desc: the kernel may still read it */
+      }
+      c->broken = 1;
+      break;
+    }
+  }
+  free(desc);
+  return err;
 }

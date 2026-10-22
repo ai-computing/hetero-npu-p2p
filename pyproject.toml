@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hetero-npu-p2p"
-version = "0.6.0"
+version = "0.7.0"
 description = "Experimental completion-fenced same-host heterogeneous NPU KV transport"
 requires-python = ">=3.10"
 dependencies = ["rm-core @ git+https://github.com/ai-computing/rm-core@v0.1.1"]
@@ -14,6 +14,7 @@ hetero-p2p = "hetero_p2p.cli:main"
 
 [project.entry-points."airm.kv_transports"]
 p2p = "hetero_p2p.airm:P2PTransport"
+p2p-dmabuf = "hetero_p2p.airm_dmabuf:DmabufKVTransport"
 
 [tool.setuptools.packages.find]
 where = ["src"]
