@@ -8,6 +8,9 @@ write, the native run and the completion fence), median of --reps; native_* is t
 Experiments (--experiments):
   pairs    every --pairs chip:gpu pair with the default backend (cached region, default slice, --queue-depth)
   exports  pair 1: cached region vs a fresh export per transfer vs one 1 GiB export (stage 1's large-export case)
+  small    every pair, --small-sizes: the small-transfer levers added one at a time (no GPU sync, cached plan,
+           spread over the queue, polled ring), the default API call, and the batch API (--batch ranges under one
+           fence), with the per-stage profile
   depth    pair 1: queue depth sweep;   slices  pair 1: slice size sweep (exact-range exports off)
 
 The RNGD side is raw DRAM at --npu-offset, not an SDK allocation: the chip must be idle (no process holding
@@ -26,6 +29,8 @@ ap.add_argument('--queue-depth', type=int, default=4)
 ap.add_argument('--descriptors', type=int, default=64)
 ap.add_argument('--npu-offset', type=int, default=4 << 30, help='RNGD DRAM offset used (bytes, 2 MiB aligned)')
 ap.add_argument('--experiments', default='pairs,exports,depth,slices')
+ap.add_argument('--small-sizes', default='2,4,16', help='MiB')
+ap.add_argument('--batch', type=int, default=8, help='ranges per batch call in the small experiment')
 ap.add_argument('--depths', default='1,2,4,8')
 ap.add_argument('--slice-sweep', default='16,64,256', help='MiB')
 ap.add_argument('--out')
@@ -119,6 +124,49 @@ def verified_round_trip(p, n, write, read, reps):
                 passed=bar_ok and exact and mark)
 
 
+PROFILE = []
+
+
+def small_variants(p):
+    """(name, write(n), read(n), ranges per call). Each lever is added on top of the previous one."""
+    release_region(p.src)
+    release_region(p.dst)
+    rs, rd = cuda_region(p.src), cuda_region(p.dst)
+    dev = f'/dev/rngd/npu{p.chip}ch0'
+    old = RngdDmabufBackend(a.library, dev, a.queue_depth, a.descriptors, poll=False, spread=False)   # as #8
+    deflt = p.backend                         # defaults: polled ring, spread over the queue
+    deep = RngdDmabufBackend(a.library, dev, 8, a.descriptors)
+    p.extra = (old, deep)
+    def single(b, ready, cache):
+        def w(n):
+            r = b.write(rs, a.npu_offset, length=n, ready=ready, cache=cache)
+            PROFILE.append(r['profile'])
+            return r
+
+        def rd_(n):
+            r = b.read(a.npu_offset, rd, length=n, cache=cache)
+            PROFILE.append(r['profile'])
+            return r
+        return w, rd_
+
+    def batch(b, k):
+        def mk(direction, region):
+            def run(n):                     # n = k ranges of n // k bytes under one fence
+                m = n // k
+                copies = [gpu.DmabufCopy(a.npu_offset + i * m, region, i * m, m) for i in range(k)]
+                r = b.copy(direction, copies, ready=True if direction == 'write' else None)
+                PROFILE.append(r['profile'])
+                return r
+            return run
+        return mk('write', rs), mk('read', rd)
+    return [('baseline-#8', *single(old, None, False), 1),
+            ('#8+no-sync+cached-plan', *single(old, True, True), 1),
+            ('default', *single(deflt, None, True), 1),                 # write(region, npu) with no options
+            ('default+no-sync', *single(deflt, True, True), 1),
+            ('default+no-sync+qd8', *single(deep, True, True), 1),
+            (f'batch-{a.batch}', *batch(deflt, a.batch), a.batch)]
+
+
 def api(p, slice_bytes=gpu.SLICE, exact=gpu.EXACT_CACHE):
     release_region(p.src)
     release_region(p.dst)
@@ -161,10 +209,25 @@ def main():
                queue_depth=a.queue_depth, descriptors_per_command=a.descriptors, slice_MiB=gpu.SLICE // MiB,
                exact_cache=gpu.EXACT_CACHE, reps=a.reps, npu_offset=a.npu_offset)
     log(env=env)
-    result = dict(env=env, pairs=[], exports=[], depth=[], slices=[])
+    result = dict(env=env, pairs=[], exports=[], depth=[], slices=[], small=[])
     for k, (chip, index) in enumerate(pairs):
         p = Pair(chip, index)
         try:
+            if 'small' in experiments:
+                for name, w, r, nk in small_variants(p):
+                    for n in (int(x) * MiB for x in a.small_sizes.split(',')):
+                        w(n * nk); r(n * nk)                    # warm-up: exports and cached plans
+                        PROFILE.clear()
+                        row = dict(chip=chip, gpu=index, variant=name, range_MiB=n // MiB, ranges_per_call=nk,
+                                   **verified_round_trip(p, n * nk, w, r, a.reps))
+                        half = len(PROFILE) // 2
+                        row['profile_us'] = {d: {s: round(statistics.median(x[s] for x in part) * 1e6, 1)
+                                                 for s in part[0]} for d, part in
+                                             (('gpu_to_rngd', PROFILE[:half]), ('rngd_to_gpu', PROFILE[half:]))}
+                        result['small'].append(row)
+                        log(experiment='small', **row)
+                for b in p.extra:
+                    b.close()
             if 'pairs' in experiments:
                 write, read, rs, rd = api(p)
                 for n in SIZES:
@@ -208,7 +271,7 @@ def main():
                         log(experiment='slices', **row)
         finally:
             p.close()
-    rows = [r for k in ('pairs', 'exports', 'depth', 'slices') for r in result[k]]
+    rows = [r for k in ('pairs', 'exports', 'depth', 'slices', 'small') for r in result[k]]
     result['passed'] = bool(rows) and all(r['passed'] for r in rows)
     log(passed=result['passed'], rows=len(rows))
     if a.out:
