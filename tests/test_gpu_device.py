@@ -45,8 +45,8 @@ class DeviceTests(unittest.TestCase):
         src = torch.randint(0, 256, (16 * MiB,), dtype=torch.uint8, device='cuda')
         dst = torch.zeros_like(src)
         try:
-            for qd in (1, 2, 3, 8):
-                b = RngdDmabufBackend(LIB, DEVICE, queue_depth=qd, descriptors_per_command=1)
+            for qd, poll in ((1, False), (2, False), (3, False), (8, False), (1, True), (4, True)):
+                b = RngdDmabufBackend(LIB, DEVICE, queue_depth=qd, descriptors_per_command=1, poll=poll)
                 try:
                     w = b.write(src, NPU)                       # 8 commands of one 2 MiB descriptor
                     dst.zero_()
@@ -54,7 +54,7 @@ class DeviceTests(unittest.TestCase):
                 finally:
                     b.close()
                 self.assertEqual((w['requested'], w['completed'], r['completed']), (8, 8, 8))
-                self.assertTrue(torch.equal(src, dst), qd)
+                self.assertTrue(torch.equal(src, dst), (qd, poll))
         finally:
             release_region(src)
             release_region(dst)
@@ -66,7 +66,7 @@ class DeviceTests(unittest.TestCase):
             fd = cuda_region(t).range_fd(0, 2 * MiB)
             native, ctx = self.backend._native, self.backend._ctx
             for npu, off, n in ((NPU + 1, 0, 4096), (NPU, 4096, 2 * MiB), ((48 << 30), 0, 4096)):
-                rc, done = native.run(ctx, True, [fd], [1], [npu], [off], [n])
+                rc, done = native.run(ctx, native.prepare(True, [fd], [1], [npu], [off], [n]))
                 self.assertEqual((rc, done), (-22, 0))
             self.backend.write(t, NPU)                                     # the context is still usable
         finally:

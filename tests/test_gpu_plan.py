@@ -179,6 +179,95 @@ class BackendTests(unittest.TestCase):
                 RngdDmabufBackend(lib)
 
 
+class SmallTransferLeverTests(unittest.TestCase):
+    """Plan cache, caller-provided readiness, batching under one fence, polled ring and the profile."""
+
+    def setUp(self):
+        self.g = FakeGpu(32 * MiB)
+        self.native = FakeNative(self.g)
+        self.b = RngdDmabufBackend(None, native=self.native, poll=True)
+        self.synced = []
+        self.r = self.g.region(slice_bytes=16 * MiB, exact_cache=2, sync=lambda: self.synced.append(1))
+
+    def tearDown(self):
+        self.r.close()
+
+    def test_poll_flag_reaches_the_ring_and_spread_follows_it(self):
+        self.assertEqual((self.native.flags, self.b.spread), (1, True))
+        n = FakeNative(self.g)
+        b = RngdDmabufBackend(None, native=n, poll=False)
+        self.assertEqual((n.flags, b.poll, b.spread), (0, False, False))
+        self.assertTrue(RngdDmabufBackend(None, native=n, poll=False, spread=True).spread)
+        self.assertTrue(RngdDmabufBackend(None, native=n).poll)                    # default: polled ring
+
+    def test_repeated_copies_reuse_the_prepared_plan(self):
+        first = self.b.read(0, self.r, length=2 * MiB)
+        again = self.b.read(0, self.r, length=2 * MiB)
+        self.assertEqual((first['plan_cached'], again['plan_cached']), (False, True))
+        self.assertEqual(self.native.prepared, 1)
+        self.assertFalse(self.b.read(4 * MiB, self.r, length=2 * MiB)['plan_cached'])   # other RNGD offset
+        self.assertFalse(self.b.read(0, self.r, length=2 * MiB, cache=False)['plan_cached'])
+
+    def test_cached_plan_is_dropped_when_its_export_closes(self):
+        self.b.read(0, self.r, length=2 * MiB)
+        for k in (1, 2, 3):                                  # exact_cache=2: the first export is evicted
+            self.b.read(0, self.r, region_offset=k * 2 * MiB, length=2 * MiB)
+        data = random.Random(3).randbytes(2 * MiB)
+        self.native.dram[:2 * MiB] = data
+        r = self.b.read(0, self.r, length=2 * MiB)
+        self.assertFalse(r['plan_cached'])                   # re-planned with a live FD
+        self.assertEqual(bytes(self.g.mem[:2 * MiB]), data)
+
+    def test_ready_controls_the_gpu_sync(self):
+        self.b.write(self.r, 0, length=MiB)
+        self.assertEqual(len(self.synced), 1)                # default: synchronize the region's device
+        self.b.write(self.r, 0, length=MiB, ready=True)
+        self.assertEqual(len(self.synced), 1)                # caller guarantees it
+        event = types.SimpleNamespace(calls=[])
+        event.synchronize = lambda: event.calls.append(1)
+        self.b.write(self.r, 0, length=MiB, ready=event)
+        self.assertEqual((len(self.synced), event.calls), (1, [1]))
+        with self.assertRaises(ValueError):
+            self.b.write(self.r, 0, length=MiB, ready='yes')
+        self.b.read(0, self.r, length=MiB, )
+        self.assertEqual(len(self.synced), 1)                # reads never sync the GPU
+
+    def test_batch_moves_several_ranges_under_one_fence(self):
+        data = random.Random(4).randbytes(8 * MiB)
+        self.g.mem[:8 * MiB] = data
+        copies = [DmabufCopy(k * 4 * MiB, self.r, k * 2 * MiB, 2 * MiB) for k in range(4)]   # scattered on RNGD
+        receipt = self.b.copy('write', copies, ready=True)
+        self.assertEqual(len(self.native.runs), 1)           # one native run, one fence
+        self.assertEqual(receipt['bytes_requested'], 8 * MiB)
+        for k in range(4):
+            self.assertEqual(bytes(self.native.dram[k * 4 * MiB:k * 4 * MiB + 2 * MiB]), data[k * 2 * MiB:(k + 1) * 2 * MiB])
+        self.g.mem[:8 * MiB] = bytes(8 * MiB)
+        self.b.copy('read', copies)
+        self.assertEqual(bytes(self.g.mem[:8 * MiB]), data)
+
+    def test_small_transfers_are_spread_over_the_queue(self):
+        data = random.Random(5).randbytes(16 * MiB)
+        self.g.mem[:16 * MiB] = data
+        for n, commands, span in ((2 * MiB, 4, 512 * 1024), (4 * MiB, 4, MiB), (16 * MiB, 4, 2 * MiB),
+                                  (4096, 1, 256 * 1024)):
+            r = self.b.write(self.r, 0, length=n, ready=True)
+            run = self.native.runs[-1]
+            self.assertEqual((r['requested'], len(run['counts'])), (commands, commands), n)
+            self.assertEqual(max(run['len']), min(span, n), n)
+            self.assertEqual(bytes(self.native.dram[:n]), data[:n])
+        whole = RngdDmabufBackend(None, native=self.native, spread=False)
+        self.assertEqual(whole.write(self.r, 0, length=2 * MiB, ready=True)['requested'], 1)
+        big = RngdDmabufBackend(None, native=self.native, queue_depth=1)
+        self.assertEqual(big.write(self.r, 0, length=16 * MiB, ready=True)['requested'], 1)   # nothing to spread over
+
+    def test_profile_is_reported(self):
+        p = self.b.read(0, self.r, length=MiB)['profile']
+        self.assertEqual(set(p), {'sync', 'plan', 'validate', 'submit', 'fence', 'native', 'total'})
+        self.assertAlmostEqual(p['validate'], 1e-6)
+        self.assertAlmostEqual(p['submit'], 2e-6)
+        self.assertAlmostEqual(p['fence'], 6e-6)
+
+
 class CudaRegionGuardTests(unittest.TestCase):
     """cuda_region() refuses before exporting anything when the host cannot export CUDA memory as DMA-BUF."""
 

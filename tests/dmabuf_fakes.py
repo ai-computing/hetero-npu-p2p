@@ -28,11 +28,19 @@ class FakeNative:
         self.gpu, self.dram, self.open_rc = gpu, bytearray(dram), open_rc
         self.runs, self.fail_after, self.closed, self.depth = [], None, False, None
 
-    def open(self, device, depth):
-        self.depth = depth
+    def open(self, device, depth, flags=0):
+        self.depth, self.flags = depth, flags
         return self.open_rc, object()
 
-    def run(self, ctx, write, fds, counts, npu, off, length):
+    def prepare(self, write, fds, counts, npu, off, length):
+        self.prepared = getattr(self, 'prepared', 0) + 1
+        return (write, list(fds), list(counts), list(npu), list(off), list(length))
+
+    def profile(self, ctx):
+        return (1000, 3000, 9000)
+
+    def run(self, ctx, args):
+        write, fds, counts, npu, off, length = args
         self.runs.append(dict(write=write, fds=list(fds), counts=list(counts), npu=list(npu), off=list(off),
                               len=list(length)))
         i = done = 0

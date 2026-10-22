@@ -26,6 +26,7 @@ MiB = 1024 ** 2
 SLICE = 16 * MiB                 # slice exported for transfers larger than one slice (measured best, docs/gpu-rngd.md)
 MAX_SLICE = 256 * MiB
 SPAN = 2 * MiB                   # descriptor size
+MIN_SPAN = 256 * 1024            # smallest descriptor when a small transfer is spread over the queue
 PAGE = 4096
 DESCRIPTORS_PER_COMMAND = 64
 QUEUE_DEPTH = 4
@@ -33,7 +34,8 @@ EXACT_CACHE = 256                # exact-range exports kept per region
 DRAM_LIMIT = 48 * 1024 ** 3 - 512 * MiB   # RNGD DRAM usable by PDMA (driver: NPU_DRAM_SIZE - NPU_FW_SIZE)
 _ATTR_DMA_BUF = 124              # CU_DEVICE_ATTRIBUTE_DMA_BUF_SUPPORTED
 _RANGE_DMA_BUF_FD = 1            # CU_MEM_RANGE_HANDLE_TYPE_DMA_BUF_FD
-NATIVE_ABI = 1
+NATIVE_ABI = 2
+PLAN_CACHE = 1024                 # prepared transfers kept per backend
 
 
 def _cuda():
@@ -91,6 +93,7 @@ class CudaRegion:
         self.exports_made = 0                 # total export calls; stays flat while transfers reuse the cache
         self.lock = threading.RLock()         # held by a backend from planning until the fence
         self.closed = False
+        self.generation = 0                   # bumped when an export FD closes: invalidates cached plans
 
     def _export(self, offset, length):
         fd = self._exporter(self.ptr + offset, length, self.device)
@@ -121,6 +124,7 @@ class CudaRegion:
             self._exact[key] = fd
             for old in [k for k in self._exact if k not in self._pinned][:max(0, len(self._exact) - self.exact_cache)]:
                 os.close(self._exact.pop(old))
+                self.generation += 1
             return fd
 
     def release_pins(self):
@@ -169,6 +173,7 @@ class CudaRegion:
             self._slices.clear()
             self._exact.clear()
             self.closed = True
+            self.generation += 1
 
 
 _REGIONS = {}
@@ -286,26 +291,28 @@ class DmabufCopy:
     length: int
 
 
-def _spans(region, region_offset, npu_offset, length):
+def _spans(region, region_offset, npu_offset, length, span=SPAN):
     spans = []
     for fd, off, n in region.locate(region_offset, length):
-        for k in range(0, n, SPAN):
-            m = min(SPAN, n - k)
+        for k in range(0, n, span):
+            m = min(span, n - k)
             spans.append(DmabufSpan(fd, npu_offset, off + k, m))
             npu_offset += m
     return spans
 
 
-def plan_copies(direction, copies, owner=None, descriptors_per_command=DESCRIPTORS_PER_COMMAND):
-    """One DmabufPlan for several DmabufCopy items, in 2 MiB spans over each region's exports.
+def plan_copies(direction, copies, owner=None, descriptors_per_command=DESCRIPTORS_PER_COMMAND, span_bytes=SPAN):
+    """One DmabufPlan for several DmabufCopy items, in spans of `span_bytes` (2 MiB) over each region's exports.
 
     Hold every region's `lock` from planning until the transfer is fenced (RngdDmabufBackend does).
     """
+    if type(span_bytes) is not int or span_bytes % PAGE or not 0 < span_bytes <= SPAN:
+        raise ValueError('span size must be 4 KiB aligned and at most 2 MiB')
     spans = []
     for c in copies:
         if type(c.npu_offset) is not int or c.npu_offset < 0:
             raise ValueError('non-negative RNGD DRAM offset required')
-        spans += _spans(c.region, c.region_offset, c.npu_offset, c.length)
+        spans += _spans(c.region, c.region_offset, c.npu_offset, c.length, span_bytes)
     return DmabufPlan(direction, tuple(spans), (owner, tuple(c.region for c in copies)), descriptors_per_command)
 
 
@@ -318,50 +325,81 @@ def plan_copy(direction, region, region_offset, npu_offset, length, owner=None,
 
 class _Native:
     """ctypes binding of build/librngd_dmabuf.so (native/rngd_dmabuf.c)."""
+    U64P = ctypes.POINTER(ctypes.c_uint64)
 
     def __init__(self, path):
         lib = ctypes.CDLL(str(path))
         lib.rd_abi.restype = ctypes.c_int
-        lib.rd_open.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p)]
+        lib.rd_open2.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p)]
         lib.rd_run.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_uint32, ctypes.POINTER(ctypes.c_int32),
-                               ctypes.POINTER(ctypes.c_uint32), ctypes.c_uint64, ctypes.POINTER(ctypes.c_uint64),
-                               ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64),
-                               ctypes.POINTER(ctypes.c_uint64)]
+                               ctypes.POINTER(ctypes.c_uint32), ctypes.c_uint64, self.U64P, self.U64P, self.U64P,
+                               self.U64P]
+        lib.rd_profile.argtypes = [ctypes.c_void_p, self.U64P]
+        lib.rd_profile.restype = None
         lib.rd_close.argtypes = [ctypes.c_void_p]
         lib.rd_close.restype = None
         if lib.rd_abi() != NATIVE_ABI:
             raise RuntimeError('native library ABI mismatch')
         self.lib = lib
 
-    def open(self, device, depth):
+    def open(self, device, depth, flags=0):
         ctx = ctypes.c_void_p()
-        rc = self.lib.rd_open(device.encode(), depth, ctypes.byref(ctx))
+        rc = self.lib.rd_open2(device.encode(), depth, flags, ctypes.byref(ctx))
         return rc, ctx
 
-    def run(self, ctx, write, fds, counts, npu, off, length):
-        n, d = len(fds), len(npu)
+    def prepare(self, write, fds, counts, npu, off, length):
+        """ctypes arguments for run(), built once and reusable."""
         arr = lambda t, v: (t * len(v))(*v)
+        return (int(write), len(fds), arr(ctypes.c_int32, fds), arr(ctypes.c_uint32, counts), len(npu),
+                arr(ctypes.c_uint64, npu), arr(ctypes.c_uint64, off), arr(ctypes.c_uint64, length))
+
+    def run(self, ctx, args):
         done = ctypes.c_uint64(0)
-        rc = self.lib.rd_run(ctx, int(write), n, arr(ctypes.c_int32, fds), arr(ctypes.c_uint32, counts), d,
-                             arr(ctypes.c_uint64, npu), arr(ctypes.c_uint64, off), arr(ctypes.c_uint64, length),
-                             ctypes.byref(done))
+        rc = self.lib.rd_run(ctx, *args, ctypes.byref(done))
         return rc, done.value
+
+    def profile(self, ctx):
+        out = (ctypes.c_uint64 * 3)()
+        self.lib.rd_profile(ctx, out)
+        return tuple(out)
 
     def close(self, ctx):
         self.lib.rd_close(ctx)
+
+
+class Prepared:
+    """A validated plan with its native arguments, reusable while its regions keep their exports."""
+
+    def __init__(self, plan, args, regions):
+        self.plan, self.args, self.regions = plan, args, regions
+        self.generations = tuple(r.generation for r in regions)
+        self.requested = plan.commands
+
+    def valid(self):
+        return all(not r.closed and r.generation == g for r, g in zip(self.regions, self.generations))
 
 
 class RngdDmabufBackend:
     """Runs DmabufPlans on one RNGD with an in-process native library (one device FD and io_uring, reused).
 
     `queue_depth` commands are in flight at once (the driver spreads them over its PDMA channels);
-    `descriptors_per_command` 2 MiB descriptors make one command. `transfer`, `read` and `write` return a receipt
-    only after every command's CQE was reaped (completion fence) and raise on any failure; a failed transfer leaves
-    nothing in flight. `native` replaces the library (tests).
+    `descriptors_per_command` 2 MiB descriptors make one command. `poll=True` (default) uses a completion-polled
+    ring (IORING_SETUP_IOPOLL): the calling thread polls the PDMA status inside the kernel instead of the driver's
+    completion worker, and a command whose PDMA channel is busy waits in the poll loop instead of blocking the
+    submitter on the channel lock; the price is a busy CPU while the transfer runs. `transfer`, `read`, `write` and `copy` return a receipt only after every command's CQE was
+    reaped (completion fence) and raise on any failure; a failed transfer leaves nothing in flight. Plans for
+    repeated (region, offset, length, RNGD offset) copies are kept and reused while the regions keep their exports.
+    `spread` (default: same as `poll`): a transfer too small to fill `queue_depth` commands is cut into smaller
+    descriptors (at least 256 KiB) so that about `queue_depth` commands run at once on separate PDMA channels; one
+    command on one channel is the floor of a small transfer otherwise. Without polling, spreading is slower on most
+    GPU/RNGD pairs (submitters block on busy channels), hence the default.
+    Each receipt has a `profile` in seconds: sync, plan, validate, submit, fence, native, total. `native` replaces
+    the library (tests).
     """
 
     def __init__(self, library, device='/dev/rngd/npu0ch0', queue_depth=QUEUE_DEPTH,
-                 descriptors_per_command=DESCRIPTORS_PER_COMMAND, native=None):
+                 descriptors_per_command=DESCRIPTORS_PER_COMMAND, native=None, poll=True, plan_cache=PLAN_CACHE,
+                 spread=None):
         if type(queue_depth) is not int or not 1 <= queue_depth <= 64:
             raise ValueError('queue depth 1..64 required')
         if type(descriptors_per_command) is not int or not 1 <= descriptors_per_command <= 256:
@@ -375,46 +413,109 @@ class RngdDmabufBackend:
                 raise RuntimeError('unsupported native library build ABI')
             native = _Native(library)
         self.device, self.queue_depth, self.descriptors_per_command = device, queue_depth, descriptors_per_command
-        self._native, self._lock = native, threading.Lock()
-        rc, self._ctx = native.open(device, queue_depth)
+        self.poll, self.plan_cache = bool(poll), plan_cache
+        self.spread = self.poll if spread is None else bool(spread)
+        self._native, self._lock, self._plans = native, threading.Lock(), OrderedDict()
+        rc, self._ctx = native.open(device, queue_depth, 1 if poll else 0)
         if rc:
             self._ctx = None
             if rc == -95:          # EOPNOTSUPP: no NPU_PDMA_CAPS_DMABUF
                 raise PathUnavailable(f'{device}: RNGD driver without DMA-BUF PDMA (NPU_PDMA_CAPS_DMABUF)')
             raise OSError(-rc, f'cannot open RNGD PDMA {device}: {os.strerror(-rc)}')
 
-    def transfer(self, plan: DmabufPlan):
+    def prepare(self, plan, regions=()):
+        """Validate a plan once and build its native arguments."""
         plan.validate()
         groups = plan.groups()
+        args = self._native.prepare(plan.direction == 'write', [g[0] for g in groups], [g[2] for g in groups],
+                                    [s.npu_offset for s in plan.spans], [s.buffer_offset for s in plan.spans],
+                                    [s.length for s in plan.spans])
+        return Prepared(plan, args, tuple(regions))
+
+    def _run(self, prepared, profile):
+        plan = prepared.plan
         with self._lock:
             if self._ctx is None:
                 raise RuntimeError('backend is closed')
             started = time.perf_counter()
-            rc, completed = self._native.run(self._ctx, plan.direction == 'write', [g[0] for g in groups],
-                                             [g[2] for g in groups], [s.npu_offset for s in plan.spans],
-                                             [s.buffer_offset for s in plan.spans], [s.length for s in plan.spans])
+            rc, completed = self._native.run(self._ctx, prepared.args)
             seconds = time.perf_counter() - started
-        receipt = dict(direction=plan.direction, cqe_result=rc, completed=completed, requested=len(groups),
+            stamps = self._native.profile(self._ctx)
+        submitted = stamps[1] or stamps[0]
+        profile.update(validate=stamps[0] * 1e-9, submit=(submitted - stamps[0]) * 1e-9,
+                       fence=max(0, stamps[2] - submitted) * 1e-9, native=seconds)
+        receipt = dict(direction=plan.direction, cqe_result=rc, completed=completed, requested=prepared.requested,
                        bytes_requested=plan.bytes, seconds=seconds, queue_depth=self.queue_depth,
-                       descriptors_per_command=plan.descriptors_per_command)
+                       descriptors_per_command=plan.descriptors_per_command, poll=self.poll, profile=profile)
         if rc:
             raise RuntimeError(f'DMA-BUF PDMA failed ({os.strerror(-rc) if rc < 0 else rc}): {receipt}')
-        if completed != len(groups):
+        if completed != prepared.requested:
             raise RuntimeError(f'invalid completion receipt: {receipt}')
         return receipt
 
-    def copy(self, direction, copies, owner=None):
-        """Plan and run DmabufCopy items, holding their regions' locks until the fence."""
-        regions = sorted({id(c.region): c.region for c in copies}.values(), key=id)
+    def transfer(self, plan):
+        t = time.perf_counter()
+        prepared = self.prepare(plan)
+        return self._run(prepared, dict(sync=0.0, plan=time.perf_counter() - t))
+
+    @staticmethod
+    def _sync(regions, ready):
+        """Make GPU writes visible before the RNGD reads them (GPU -> RNGD). ready=None: synchronize each region's
+        device; ready=True: the caller guarantees it (it already synchronized or waited); otherwise an object whose
+        synchronize() waits for the producer only (a torch.cuda.Event or Stream)."""
+        if ready is True:
+            return
+        if ready is None:
+            for r in regions:
+                r.sync()
+            return
+        sync = getattr(ready, 'synchronize', None)
+        if sync is None:
+            raise ValueError('ready must be None, True, or an event/stream with synchronize()')
+        sync()
+
+    def _layout(self, copies):
+        """(span bytes, descriptors per command) for these copies."""
+        span, per = SPAN, self.descriptors_per_command
+        total = sum(c.length for c in copies)
+        if self.spread and total < self.queue_depth * per * SPAN:
+            span = min(SPAN, max(MIN_SPAN, -(-total // self.queue_depth // PAGE) * PAGE))
+            spans = sum(-(-c.length // span) for c in copies)
+            per = min(per, max(1, -(-spans // self.queue_depth)))
+        return span, per
+
+    def copy(self, direction, copies, owner=None, ready=None, cache=True):
+        """Move several DmabufCopy items under one completion fence (the batch API). Holds the regions' locks until
+        the fence. `ready` applies to direction 'write' (see _sync); `cache` reuses the prepared plan of identical
+        copies."""
+        copies = tuple(copies)
+        regions = tuple(sorted({id(c.region): c.region for c in copies}.values(), key=id))
+        span, per = self._layout(copies)
+        key = (direction, tuple((id(c.region), c.region_offset, c.npu_offset, c.length) for c in copies),
+               span, per) if cache and self.plan_cache else None
         for r in regions:
             r.lock.acquire()
         try:
+            t0 = time.perf_counter()
             if direction == 'write':
-                for r in regions:
-                    r.sync()      # GPU writes must be complete before the RNGD reads the memory
-            plan = plan_copies(direction, copies, owner, self.descriptors_per_command)
-            receipt = self.transfer(plan)
+                self._sync(regions, ready)
+            t1 = time.perf_counter()
+            prepared = self._plans.get(key) if key else None
+            hit = (prepared is not None and prepared.valid()
+                   and all(a is b for a, b in zip(prepared.regions, regions)))
+            if hit:
+                self._plans.move_to_end(key)
+            else:
+                prepared = self.prepare(plan_copies(direction, copies, owner, per, span), regions)
+                if key:
+                    self._plans[key] = prepared
+                    while len(self._plans) > self.plan_cache:
+                        self._plans.popitem(last=False)
+            t2 = time.perf_counter()
+            receipt = self._run(prepared, dict(sync=t1 - t0, plan=t2 - t1))
+            receipt['plan_cached'] = hit
             receipt['exports'] = sum(r.exports for r in regions)
+            receipt['profile']['total'] = time.perf_counter() - t0
             return receipt
         finally:
             for r in reversed(regions):
@@ -425,20 +526,21 @@ class RngdDmabufBackend:
     def _region(region):
         return region if hasattr(region, 'locate') else cuda_region(region)
 
-    def read(self, npu_offset, region, region_offset=0, length=None, owner=None):
+    def read(self, npu_offset, region, region_offset=0, length=None, owner=None, cache=True):
         """RNGD DRAM [npu_offset, +length) -> region[region_offset:]; region may be a CUDA tensor."""
         region = self._region(region)
         length = region.size - region_offset if length is None else length
-        return self.copy('read', (DmabufCopy(npu_offset, region, region_offset, length),), owner)
+        return self.copy('read', (DmabufCopy(npu_offset, region, region_offset, length),), owner, cache=cache)
 
-    def write(self, region, npu_offset, region_offset=0, length=None, owner=None):
+    def write(self, region, npu_offset, region_offset=0, length=None, owner=None, ready=None, cache=True):
         """region[region_offset:] -> RNGD DRAM [npu_offset, +length); region may be a CUDA tensor."""
         region = self._region(region)
         length = region.size - region_offset if length is None else length
-        return self.copy('write', (DmabufCopy(npu_offset, region, region_offset, length),), owner)
+        return self.copy('write', (DmabufCopy(npu_offset, region, region_offset, length),), owner, ready, cache)
 
     def close(self):
         with self._lock:
+            self._plans.clear()
             if self._ctx is not None:
                 self._native.close(self._ctx)
                 self._ctx = None

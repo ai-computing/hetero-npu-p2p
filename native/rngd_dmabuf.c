@@ -5,6 +5,9 @@
  * open and no ring setup.
  *
  *   rd_open(path, queue_depth, &ctx)   open /dev/rngd/npuNch0, require NPU_PDMA_CAPS_DMABUF, set up the ring
+ *   rd_open2(path, queue_depth, flags, &ctx)   flags RD_POLL: completion-polled ring (IORING_SETUP_IOPOLL); the
+ *                                      driver then reaps the PDMA status from io_uring_enter instead of a workqueue
+ *   rd_profile(ctx, ns[3])             last rd_run: validated, first submission returned, fenced (ns from entry)
  *   rd_run(ctx, write, ...)            run commands with up to queue_depth in flight; return after every CQE
  *   rd_close(ctx)
  *
@@ -30,11 +33,14 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
+#include <time.h>
 #include <linux/io_uring.h>
 #include "npu_pdma_uapi.h"
 #include "npu_address_map.h"
 
-#define RD_ABI 1
+#define RD_ABI 2
+#define RD_POLL 1U
+#define RD_SETUP_IOPOLL (1U << 0)        /* IORING_SETUP_IOPOLL */
 #define RD_OP_URING_CMD 46               /* IORING_OP_URING_CMD (Linux >= 5.19) */
 #define RD_SETUP_SQE128 (1U << 10)       /* IORING_SETUP_SQE128 */
 #define RD_SQE_BYTES 128
@@ -53,7 +59,12 @@ struct rd_ctx {
   uint8_t *sqes; size_t sqes_len;
   unsigned *sq_head, *sq_tail, *sq_mask, *sq_array, *cq_head, *cq_tail, *cq_mask;
   struct rd_cqe *cqes;
+  uint64_t profile[3];
 };
+
+static uint64_t now_ns(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return (uint64_t)t.tv_sec * 1000000000ULL + (uint64_t)t.tv_nsec; }
+
+void rd_profile(const struct rd_ctx *c, uint64_t out[3]) { if (c && out) memcpy(out, c->profile, sizeof c->profile); }
 
 int rd_abi(void) { return RD_ABI; }
 
@@ -72,9 +83,9 @@ void rd_close(struct rd_ctx *c) {
   free(c);
 }
 
-int rd_open(const char *path, unsigned depth, struct rd_ctx **out) {
+int rd_open2(const char *path, unsigned depth, unsigned flags, struct rd_ctx **out) {
   unsigned id; char extra; char expected[64];
-  if (!path || !out || !depth || depth > RD_MAX_DEPTH) return -EINVAL;
+  if (!path || !out || !depth || depth > RD_MAX_DEPTH || (flags & ~RD_POLL)) return -EINVAL;
   if (sscanf(path, "/dev/rngd/npu%uch0%c", &id, &extra) != 1) return -EINVAL;
   snprintf(expected, sizeof expected, "/dev/rngd/npu%uch0", id);
   if (strcmp(expected, path)) return -EINVAL;
@@ -85,7 +96,7 @@ int rd_open(const char *path, unsigned depth, struct rd_ctx **out) {
   if ((c->dev = open(path, O_RDWR | O_CLOEXEC)) < 0) { err = -errno; goto fail; }
   int caps = ioctl(c->dev, NPU_PDMA_GET_CAPS);
   if (caps < 0 || !(caps & NPU_PDMA_CAPS_DMABUF)) { err = -EOPNOTSUPP; goto fail; }
-  struct io_uring_params p; memset(&p, 0, sizeof p); p.flags = RD_SETUP_SQE128;
+  struct io_uring_params p; memset(&p, 0, sizeof p); p.flags = RD_SETUP_SQE128 | ((flags & RD_POLL) ? RD_SETUP_IOPOLL : 0);
   long r = syscall(__NR_io_uring_setup, depth, &p);
   if (r < 0) { err = -errno; goto fail; }
   c->ring = (int)r;
@@ -115,6 +126,8 @@ fail:
   return err;
 }
 
+int rd_open(const char *path, unsigned depth, struct rd_ctx **out) { return rd_open2(path, depth, 0, out); }
+
 /* Reap every available CQE; returns how many. */
 static unsigned reap(struct rd_ctx *c, int *first_error, uint64_t *completed) {
   unsigned head = *c->cq_head, n = 0;
@@ -131,6 +144,8 @@ static unsigned reap(struct rd_ctx *c, int *first_error, uint64_t *completed) {
 int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const uint32_t *counts,
            uint64_t ndesc, const uint64_t *npu, const uint64_t *off, const uint64_t *len, uint64_t *completed) {
   if (!c || !completed) return -EINVAL;
+  uint64_t t0 = now_ns();
+  memset(c->profile, 0, sizeof c->profile);
   *completed = 0;
   if (c->broken) return -EIO;
   if (!ncmd || !ndesc || !fds || !counts || !npu || !off || !len) return -EINVAL;
@@ -155,6 +170,7 @@ int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const
     uint64_t dev = NPU_DRAM_INWARD_ADDR + npu[i];
     desc[i] = (struct scatter_io_desc){.src = write ? off[i] : dev, .dst = write ? dev : off[i], .len = len[i]};
   }
+  c->profile[0] = now_ns() - t0;
   /* The descriptor array must outlive every CQE: the driver may read it after submission (io-wq punt). */
   uint32_t prepared = 0; uint64_t done = 0; int err = 0;
   unsigned base = __atomic_load_n(c->sq_head, __ATOMIC_ACQUIRE), tail = *c->sq_tail;
@@ -187,7 +203,10 @@ int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const
       break;
     }
     /* Wait only when a command is (or is about to be) in the kernel: never block on an empty ring. */
-    int r = enter(c->ring, err ? 0 : unsubmitted, done < consumed || (!err && unsubmitted) ? 1 : 0);
+    /* The first submission is entered without waiting, so the profile separates submit from fence. */
+    int first = !c->profile[1] && unsubmitted && !err;
+    int r = enter(c->ring, err ? 0 : unsubmitted, first ? 0 : (done < consumed || (!err && unsubmitted) ? 1 : 0));
+    if (first) c->profile[1] = now_ns() - t0;
     if (r < 0 && r != -EINTR && r != -EAGAIN && r != -EBUSY) {
       if (!err) err = r;
       unsubmitted = (base + prepared) - __atomic_load_n(c->sq_head, __ATOMIC_ACQUIRE);
@@ -203,5 +222,6 @@ int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const
     }
   }
   free(desc);
+  c->profile[2] = now_ns() - t0;
   return err;
 }
