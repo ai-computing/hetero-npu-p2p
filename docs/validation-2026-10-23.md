@@ -116,3 +116,31 @@ an idle RNGD, not an inference engine's allocated KV cache.
 
 No fatal DMA failure was injected into real hardware. Uncertain-completion retention and recovery remain
 covered by the native fault harness; successful normal transfers do not prove behavior after an actual driver fault.
+
+## Follow-up: actual NIXL RNGD/ATOM transfers
+
+The three remaining `tests/test_nixl_hetero_npu.py` hardware tests also passed, with **zero skips**,
+in **31.934 s**, in an allocated Kubernetes Pod on the RNGD/ATOM host. Together with the three GPU/RNGD
+cases above, all six hardware cases previously skipped in the CPU-only suite have now executed successfully
+on their appropriate hosts; they were not run together on a single node.
+
+The fresh source was `d5eabfa`; the NIXL v1.5.0 HETERO_NPU plugin was compiled against the installed RNGD
+2026.4.0 headers. Plugin SHA256: `46fe52a5f5167e6792878a25c6b588334a0bc55a70428ee67c317ce3c542df42`.
+The isolated Pod reserved the three idle RNGDs and one ATOM, selected RNGD1 (`furiosa:8`) and the allocated
+RBLN-CA22, and used read-only SDK/dependency mounts plus its own writable scratch directory.
+
+- Host → RNGD → host: 8 MiB round trip and independent Furiosa SDK byte readback passed.
+- RNGD → ATOM: 4 MiB transferred into an exported 8 MiB ATOM buffer; changed bytes matched, the other half
+  stayed unchanged, the post-fence notification arrived, and the unsupported reverse route was rejected.
+- Invalid host/host, RNGD/RNGD and unaligned routes were rejected as expected.
+
+[Sanitized raw run result](gpu-rngd/nixl-devices-20261023.json). The ATOM owner uses the existing GDB allocation
+capture fixture; this verifies real allocated buffers, not an inference engine's production KV integration.
+
+The initial host attempt passed the two RNGD-only cases but errored before ATOM allocation because the host's
+scheduler group 0 contained no cards. The allocated Pod mapped its assigned scheduler device to `/dev/rsd0`
+and reported one physical ATOM. An initial Pod preflight also selected the wrong root-user Torch installation;
+using the matching read-only user site via `PYTHONUSERBASE` corrected it. No scheduler groups, device nodes,
+vendor libraries or installed environments were modified. The successful Pod exited 0; the ATOM owner exited
+normally and post-run RNGD/ATOM status showed no active contexts.
+The Pod and namespace were deleted with UID preconditions and their absence was verified afterward.
