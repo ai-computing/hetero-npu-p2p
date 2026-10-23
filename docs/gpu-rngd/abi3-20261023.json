@@ -1,0 +1,170 @@
+{
+ "env": {
+  "kernel": "6.8.0-106-generic",
+  "torch": "2.10.0+cu128",
+  "nvidia_module": "open",
+  "nvidia": "580.178.04",
+  "gpus": [
+   "NVIDIA A100 80GB PCIe",
+   "NVIDIA A100 80GB PCIe"
+  ],
+  "queue_depth": 4,
+  "descriptors_per_command": 64,
+  "slice_MiB": 16,
+  "exact_cache": 256,
+  "reps": 5,
+  "npu_offset": 4294967296
+ },
+ "pairs": [
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 2,
+   "gpu_to_rngd_GBps": 12.87,
+   "rngd_to_gpu_GBps": 13.82,
+   "native_gpu_to_rngd_GBps": 14.77,
+   "native_rngd_to_gpu_GBps": 15.62,
+   "gpu_to_rngd_ms": [
+    0.789,
+    0.215,
+    0.154,
+    0.163,
+    0.15
+   ],
+   "rngd_to_gpu_ms": [
+    0.394,
+    0.166,
+    0.143,
+    0.147,
+    0.152
+   ],
+   "bar_pages_checked": 62,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 2
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 4,
+   "gpu_to_rngd_GBps": 16.16,
+   "rngd_to_gpu_GBps": 15.89,
+   "native_gpu_to_rngd_GBps": 17.35,
+   "native_rngd_to_gpu_GBps": 17.09,
+   "gpu_to_rngd_ms": [
+    0.484,
+    0.276,
+    0.259,
+    0.259,
+    0.255
+   ],
+   "rngd_to_gpu_ms": [
+    0.476,
+    0.265,
+    0.264,
+    0.258,
+    0.259
+   ],
+   "bar_pages_checked": 64,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 4
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 16,
+   "gpu_to_rngd_GBps": 17.45,
+   "rngd_to_gpu_GBps": 18.24,
+   "native_gpu_to_rngd_GBps": 17.95,
+   "native_rngd_to_gpu_GBps": 18.59,
+   "gpu_to_rngd_ms": [
+    1.196,
+    0.966,
+    0.962,
+    0.955,
+    0.952
+   ],
+   "rngd_to_gpu_ms": [
+    1.094,
+    0.922,
+    0.905,
+    0.914,
+    0.92
+   ],
+   "bar_pages_checked": 65,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 6
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 64,
+   "gpu_to_rngd_GBps": 14.63,
+   "rngd_to_gpu_GBps": 20.74,
+   "native_gpu_to_rngd_GBps": 14.85,
+   "native_rngd_to_gpu_GBps": 20.85,
+   "gpu_to_rngd_ms": [
+    17.443,
+    4.588,
+    4.531,
+    5.112,
+    4.526
+   ],
+   "rngd_to_gpu_ms": [
+    3.665,
+    3.248,
+    3.213,
+    3.235,
+    3.235
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 14
+  },
+  {
+   "chip": 1,
+   "gpu": 1,
+   "MiB": 256,
+   "gpu_to_rngd_GBps": 14.75,
+   "rngd_to_gpu_GBps": 22.19,
+   "native_gpu_to_rngd_GBps": 14.94,
+   "native_rngd_to_gpu_GBps": 22.24,
+   "gpu_to_rngd_ms": [
+    19.139,
+    18.761,
+    17.72,
+    17.862,
+    18.203
+   ],
+   "rngd_to_gpu_ms": [
+    14.166,
+    12.085,
+    12.097,
+    12.106,
+    12.089
+   ],
+   "bar_pages_checked": 66,
+   "rngd_bar_exact": true,
+   "gpu_exact": true,
+   "marker_from_rngd": true,
+   "passed": true,
+   "exports_made": 38
+  }
+ ],
+ "exports": [],
+ "depth": [],
+ "slices": [],
+ "small": [],
+ "passed": true
+}

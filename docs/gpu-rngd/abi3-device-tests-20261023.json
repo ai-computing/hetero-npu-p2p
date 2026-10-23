@@ -1,0 +1,10 @@
+{
+  "tests": 3,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 0.0795121519768145,
+  "passed": true,
+  "chip": 1,
+  "gpu": 1
+}

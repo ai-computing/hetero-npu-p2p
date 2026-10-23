@@ -1,0 +1,22 @@
+{
+  "head": "d5eabfa3a5913791d0d9538584d17c97d7d557fb",
+  "plugin_sha256": "46fe52a5f5167e6792878a25c6b588334a0bc55a70428ee67c317ce3c542df42",
+  "nixl_version": "v1.5.0",
+  "rngd_index": 1,
+  "torch_device": "furiosa:8",
+  "atom_physical_card": "rbln0",
+  "allocated_atom_count": 1,
+  "pod_uid": "23415208-2bca-4d62-9599-8121bd877a00",
+  "namespace_uid": "e171a0a6-fa0d-4944-b48e-c7bda203d79a",
+  "image_digest": "sha256:0a9887931b0e38af2e3487ed39e29436b0535c4f3f52e57745baaf79d1898956",
+  "tests": {
+    "test_host_rngd_round_trip": "PASS",
+    "test_unvalidated_routes_are_refused": "PASS",
+    "test_rngd_to_atom_dmabuf": "PASS"
+  },
+  "test_count": 3,
+  "skips": 0,
+  "seconds": 31.934,
+  "exit_code": 0,
+  "topology": "same-host RNGD1 to allocated ATOM"
+}

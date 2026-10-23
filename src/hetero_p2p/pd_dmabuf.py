@@ -12,7 +12,7 @@ nothing falls back to a host copy. Endpoints are 'cuda:<index>' and 'rngd:<devic
 """
 import threading
 
-from .gpu import DmabufCopy
+from .gpu import DmaCompletionUncertain, DmabufCopy
 from .paths import resolve
 
 DIRECTIONS = {('cuda', 'rngd'): 'write', ('rngd', 'cuda'): 'read'}
@@ -55,6 +55,10 @@ class DmabufPDTransport:
             receipt = self.backend.copy(self.direction, copies, owner=(source.owner, destination.owner))
             if self.notify:
                 self.notify(destination)  # the destination becomes visible only after the fence
+        except DmaCompletionUncertain:
+            with self._lock:
+                self._active[request_id] = DmaCompletionUncertain
+            raise
         except BaseException:
             with self._lock:
                 self._active.pop(request_id, None)
@@ -68,11 +72,16 @@ class DmabufPDTransport:
         with self._lock:
             if request_id not in self._active:
                 raise RuntimeError(f'stale or duplicate finish for {request_id!r}')
+            if self._active[request_id] is DmaCompletionUncertain:
+                raise DmaCompletionUncertain('DMA completion is uncertain; cannot finish request')
             del self._active[request_id]
 
     def recover(self):
-        """Transfers are synchronous and the native library reaps every CQE before it returns, so nothing is in
-        flight after a failure."""
+        """An unknown completion keeps the request active until the native backend observes its CQEs."""
         with self._lock:
+            if any(value is None for value in self._active.values()):
+                return False
+            if any(value is DmaCompletionUncertain for value in self._active.values()) and not self.backend.recover():
+                return False
             self._active.clear()
         return True

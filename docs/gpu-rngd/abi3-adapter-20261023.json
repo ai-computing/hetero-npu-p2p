@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "chip": 1,
+  "gpu": 1,
+  "bytes": 2097152,
+  "checks": [
+    "wrong-gpu rejected",
+    "wrong-rngd rejected",
+    "rm-core adapter 2MiB round trip byte-exact",
+    "overlap rejected before DMA-BUF export"
+  ],
+  "metric_samples": 4
+}

@@ -16,8 +16,9 @@
  * between RNGD DRAM offset npu[i] and DMA-BUF offset off[i]; all 4 KiB aligned.
  *
  * The whole request is validated before the first submission (-EINVAL, nothing submitted). After a failed
- * command no further command is submitted, but every submitted one is still reaped: rd_run never returns with
- * DMA in flight. If the ring itself fails, the context refuses further work (-EIO).
+ * command no further command is submitted. A fatal ring failure that prevents draining returns RD_UNCERTAIN:
+ * descriptors and caller-owned memory must remain alive until rd_quiesce observes all outstanding CQEs.
+ * The broken context refuses further work (-EIO); rd_close refuses to destroy an uncertain context.
  *
  * io_uring is used through raw syscalls (no liburing), with 128-byte SQEs as the driver's uring_cmd requires.
  * No host data buffers and no host-copy fallback.
@@ -38,7 +39,8 @@
 #include "npu_pdma_uapi.h"
 #include "npu_address_map.h"
 
-#define RD_ABI 2
+#define RD_ABI 3
+#define RD_UNCERTAIN (-4096)            /* outside Linux errno range: outstanding DMA has no observed fence */
 #define RD_POLL 1U
 #define RD_SETUP_IOPOLL (1U << 0)        /* IORING_SETUP_IOPOLL */
 #define RD_OP_URING_CMD 46               /* IORING_OP_URING_CMD (Linux >= 5.19) */
@@ -60,6 +62,8 @@ struct rd_ctx {
   unsigned *sq_head, *sq_tail, *sq_mask, *sq_array, *cq_head, *cq_tail, *cq_mask;
   struct rd_cqe *cqes;
   uint64_t profile[3];
+  struct scatter_io_desc *pending_desc;
+  uint64_t pending;
 };
 
 static uint64_t now_ns(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return (uint64_t)t.tv_sec * 1000000000ULL + (uint64_t)t.tv_nsec; }
@@ -75,6 +79,7 @@ static int enter(int fd, unsigned submit, unsigned wait) {
 
 void rd_close(struct rd_ctx *c) {
   if (!c) return;
+  if (c->pending) return;               /* preserve the ring and descriptors while DMA may still use them */
   if (c->sqes && c->sqes != MAP_FAILED) munmap(c->sqes, c->sqes_len);
   if (c->cq_map && c->cq_map != MAP_FAILED && c->cq_map != c->sq_map) munmap(c->cq_map, c->cq_len);
   if (c->sq_map && c->sq_map != MAP_FAILED) munmap(c->sq_map, c->sq_len);
@@ -141,12 +146,27 @@ static unsigned reap(struct rd_ctx *c, int *first_error, uint64_t *completed) {
   return n;
 }
 
+/* Nonblocking recovery probe. Only an observed CQE, including an error CQE, proves a command has finished. */
+int rd_quiesce(struct rd_ctx *c) {
+  if (!c) return 0;
+  if (!c->pending) return 1;
+  int err = 0; uint64_t completed = 0;
+  /* GETEVENTS with min_complete=0 polls IOPOLL completions without blocking or submitting SQEs. */
+  syscall(__NR_io_uring_enter, c->ring, 0U, 0U, IORING_ENTER_GETEVENTS, NULL, 0);
+  unsigned n = reap(c, &err, &completed);
+  c->pending -= n;
+  if (c->pending) return 0;
+  free(c->pending_desc); c->pending_desc = NULL;
+  return 1;
+}
+
 int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const uint32_t *counts,
            uint64_t ndesc, const uint64_t *npu, const uint64_t *off, const uint64_t *len, uint64_t *completed) {
   if (!c || !completed) return -EINVAL;
   uint64_t t0 = now_ns();
   memset(c->profile, 0, sizeof c->profile);
   *completed = 0;
+  if (c->pending) return RD_UNCERTAIN;
   if (c->broken) return -EIO;
   if (!ncmd || !ndesc || !fds || !counts || !npu || !off || !len) return -EINVAL;
   /* Validate everything before the first submission. */
@@ -215,7 +235,10 @@ int rd_run(struct rd_ctx *c, int write, uint32_t ncmd, const int32_t *fds, const
       while (done < consumed) {
         int w = enter(c->ring, 0, 1);
         done += reap(c, &err, completed);
-        if (w < 0 && w != -EINTR && w != -EAGAIN && w != -EBUSY && done < consumed) { c->broken = 1; return err; }  /* leak desc: the kernel may still read it */
+        if (w < 0 && w != -EINTR && w != -EAGAIN && w != -EBUSY && done < consumed) {
+          c->broken = 1; c->pending_desc = desc; c->pending = consumed - done;
+          return RD_UNCERTAIN;
+        }
       }
       c->broken = 1;
       break;

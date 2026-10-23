@@ -8,7 +8,7 @@ No host-staging fallback (PROTOCOL §4.5).
 """
 from collections import deque
 from dataclasses import dataclass
-import importlib, os, time, uuid
+import importlib, os, re, time, uuid
 
 from rm_core import NoHardware, TransferHandle, TransferPlan, TransferResult, TransportError
 from rm_core.metrics import Measurement
@@ -87,6 +87,14 @@ class DmabufKVTransport:
                 region = cuda_region(region)
             except (PathUnavailable, ValueError) as e:
                 raise TransportError(f'{self.name}: {e}') from e
+        npu_tier, gpu_tier = (src, dst) if pair[0] == 'rngd' else (dst, src)
+        configured = re.fullmatch(r'/dev/rngd/npu(0|[1-9][0-9]*)ch0', self.device)
+        native_device = getattr(self._backend, 'device', self.device)
+        if (configured is None or native_device != self.device
+                or npu_tier.accelerator_id.rsplit('/', 1)[-1] != f'furiosa:{configured[1]}'
+                or type(region.device) is not int or region.device < 0
+                or gpu_tier.accelerator_id.rsplit('/', 1)[-1] != f'nvidia:{region.device}'):
+            raise TransportError(f'{self.name}: configured device identity does not match the bound route')
         copy = DmabufCopy(binding.npu_offset + offset, region, binding.region_offset + offset, nbytes)
         if copy.region_offset + nbytes > region.size:
             raise TransportError(f'{self.name}: tokens {tokens} exceed the bound GPU region')
