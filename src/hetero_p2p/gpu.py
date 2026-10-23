@@ -34,8 +34,14 @@ EXACT_CACHE = 256                # exact-range exports kept per region
 DRAM_LIMIT = 48 * 1024 ** 3 - 512 * MiB   # RNGD DRAM usable by PDMA (driver: NPU_DRAM_SIZE - NPU_FW_SIZE)
 _ATTR_DMA_BUF = 124              # CU_DEVICE_ATTRIBUTE_DMA_BUF_SUPPORTED
 _RANGE_DMA_BUF_FD = 1            # CU_MEM_RANGE_HANDLE_TYPE_DMA_BUF_FD
-NATIVE_ABI = 2
+NATIVE_ABI = 3
+DMA_UNCERTAIN = -4096              # native RD_UNCERTAIN, distinct from every Linux errno
+_QUARANTINED = {}                  # retain owners even if a caller drops a failed backend
 PLAN_CACHE = 1024                 # prepared transfers kept per backend
+
+
+class DmaCompletionUncertain(RuntimeError):
+    """DMA may still access the source and destination; neither allocation may be recycled."""
 
 
 def _cuda():
@@ -94,6 +100,7 @@ class CudaRegion:
         self.lock = threading.RLock()         # held by a backend from planning until the fence
         self.closed = False
         self.generation = 0                   # bumped when an export FD closes: invalidates cached plans
+        self._quarantined = 0
 
     def _export(self, offset, length):
         fd = self._exporter(self.ptr + offset, length, self.device)
@@ -130,7 +137,8 @@ class CudaRegion:
     def release_pins(self):
         """Allow eviction of the exact-range exports named by finished plans."""
         with self.lock:
-            self._pinned.clear()
+            if not self._quarantined:
+                self._pinned.clear()
 
     def locate(self, offset, length):
         """[(fd, offset in that DMA-BUF, bytes)] covering region bytes [offset, offset+length).
@@ -162,12 +170,16 @@ class CudaRegion:
             self._sync()
 
     def _check_open(self):
+        if self._quarantined:
+            raise DmaCompletionUncertain('DMA completion is uncertain; region is quarantined')
         if self.closed:
             raise ValueError('region is closed')
 
     def close(self):
         """Close every export. The owner (and its memory) stays with the caller."""
         with self.lock:
+            if self._quarantined:
+                raise DmaCompletionUncertain('DMA completion is uncertain; cannot close region')
             for fd in list(self._slices.values()) + list(self._exact.values()):
                 os.close(fd)
             self._slices.clear()
@@ -218,9 +230,10 @@ def release_region(tensor):
     """Close the exports of a tensor registered with cuda_region() and forget it."""
     key = _tensor_range(tensor)
     with _REGIONS_LOCK:
-        region = _REGIONS.pop(key, None)
-    if region is not None:
-        region.close()
+        region = _REGIONS.get(key)
+        if region is not None:
+            region.close()
+            del _REGIONS[key]
 
 
 @dataclass(frozen=True)
@@ -238,6 +251,7 @@ class DmabufPlan:
     spans: tuple
     owner: object                       # keeps the RNGD allocation and the region alive
     descriptors_per_command: int = DESCRIPTORS_PER_COMMAND
+    regions: tuple = ()                 # original CUDA ranges, when built by plan_copies
 
     def validate(self):
         if self.direction not in ('read', 'write') or self.owner is None:
@@ -308,12 +322,23 @@ def plan_copies(direction, copies, owner=None, descriptors_per_command=DESCRIPTO
     """
     if type(span_bytes) is not int or span_bytes % PAGE or not 0 < span_bytes <= SPAN:
         raise ValueError('span size must be 4 KiB aligned and at most 2 MiB')
+    copies = tuple(copies)
+    if direction == 'read':
+        written = {}
+        for c in copies:
+            lo = c.region.ptr + c.region_offset
+            written.setdefault(c.region.device, []).append((lo, lo + c.length))
+        for ranges in written.values():
+            ranges.sort()
+            if any(b < a_end for (_, a_end), (b, _) in zip(ranges, ranges[1:])):
+                raise ValueError('overlapping CUDA destination ranges')
     spans = []
     for c in copies:
         if type(c.npu_offset) is not int or c.npu_offset < 0:
             raise ValueError('non-negative RNGD DRAM offset required')
         spans += _spans(c.region, c.region_offset, c.npu_offset, c.length, span_bytes)
-    return DmabufPlan(direction, tuple(spans), (owner, tuple(c.region for c in copies)), descriptors_per_command)
+    regions = tuple({id(c.region): c.region for c in copies}.values())
+    return DmabufPlan(direction, tuple(spans), (owner, regions), descriptors_per_command, regions)
 
 
 def plan_copy(direction, region, region_offset, npu_offset, length, owner=None,
@@ -330,6 +355,8 @@ class _Native:
     def __init__(self, path):
         lib = ctypes.CDLL(str(path))
         lib.rd_abi.restype = ctypes.c_int
+        if lib.rd_abi() != NATIVE_ABI:
+            raise RuntimeError('native library ABI mismatch; rebuild librngd_dmabuf.so with native/build.py')
         lib.rd_open2.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p)]
         lib.rd_run.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_uint32, ctypes.POINTER(ctypes.c_int32),
                                ctypes.POINTER(ctypes.c_uint32), ctypes.c_uint64, self.U64P, self.U64P, self.U64P,
@@ -338,8 +365,8 @@ class _Native:
         lib.rd_profile.restype = None
         lib.rd_close.argtypes = [ctypes.c_void_p]
         lib.rd_close.restype = None
-        if lib.rd_abi() != NATIVE_ABI:
-            raise RuntimeError('native library ABI mismatch')
+        lib.rd_quiesce.argtypes = [ctypes.c_void_p]
+        lib.rd_quiesce.restype = ctypes.c_int
         self.lib = lib
 
     def open(self, device, depth, flags=0):
@@ -366,6 +393,9 @@ class _Native:
     def close(self, ctx):
         self.lib.rd_close(ctx)
 
+    def quiesce(self, ctx):
+        return self.lib.rd_quiesce(ctx) == 1
+
 
 class Prepared:
     """A validated plan with its native arguments, reusable while its regions keep their exports."""
@@ -387,7 +417,8 @@ class RngdDmabufBackend:
     ring (IORING_SETUP_IOPOLL): the calling thread polls the PDMA status inside the kernel instead of the driver's
     completion worker, and a command whose PDMA channel is busy waits in the poll loop instead of blocking the
     submitter on the channel lock; the price is a busy CPU while the transfer runs. `transfer`, `read`, `write` and `copy` return a receipt only after every command's CQE was
-    reaped (completion fence) and raise on any failure; a failed transfer leaves nothing in flight. Plans for
+    reaped (completion fence) and raise on any failure. Unknown completion quarantines allocations and exports
+    until recover() observes every outstanding CQE. Plans for
     repeated (region, offset, length, RNGD offset) copies are kept and reused while the regions keep their exports.
     `spread` (default: same as `poll`): a transfer too small to fill `queue_depth` commands is cut into smaller
     descriptors (at least 256 KiB) so that about `queue_depth` commands run at once on separate PDMA channels; one
@@ -416,6 +447,7 @@ class RngdDmabufBackend:
         self.poll, self.plan_cache = bool(poll), plan_cache
         self.spread = self.poll if spread is None else bool(spread)
         self._native, self._lock, self._plans = native, threading.Lock(), OrderedDict()
+        self._uncertain = None
         rc, self._ctx = native.open(device, queue_depth, 1 if poll else 0)
         if rc:
             self._ctx = None
@@ -430,15 +462,26 @@ class RngdDmabufBackend:
         args = self._native.prepare(plan.direction == 'write', [g[0] for g in groups], [g[2] for g in groups],
                                     [s.npu_offset for s in plan.spans], [s.buffer_offset for s in plan.spans],
                                     [s.length for s in plan.spans])
-        return Prepared(plan, args, tuple(regions))
+        return Prepared(plan, args, tuple(regions) or plan.regions)
 
-    def _run(self, prepared, profile):
+    def _run(self, prepared, profile, owner=None):
         plan = prepared.plan
         with self._lock:
             if self._ctx is None:
                 raise RuntimeError('backend is closed')
+            if self._uncertain is not None:
+                raise DmaCompletionUncertain('DMA completion is uncertain; backend is quarantined')
+            for region in prepared.regions:
+                region._check_open()
             started = time.perf_counter()
-            rc, completed = self._native.run(self._ctx, prepared.args)
+            try:
+                rc, completed = self._native.run(self._ctx, prepared.args)
+            except BaseException as error:
+                self._quarantine(prepared, owner)
+                raise DmaCompletionUncertain('DMA completion is uncertain; native receipt unavailable') from error
+            if rc == DMA_UNCERTAIN:
+                self._quarantine(prepared, owner)
+                raise DmaCompletionUncertain('DMA completion is uncertain; owners and exports quarantined')
             seconds = time.perf_counter() - started
             stamps = self._native.profile(self._ctx)
         submitted = stamps[1] or stamps[0]
@@ -452,6 +495,12 @@ class RngdDmabufBackend:
         if completed != prepared.requested:
             raise RuntimeError(f'invalid completion receipt: {receipt}')
         return receipt
+
+    def _quarantine(self, prepared, owner):
+        self._uncertain = (prepared, owner)
+        _QUARANTINED[id(self)] = self
+        for region in prepared.regions:
+            region._quarantined += 1
 
     def transfer(self, plan):
         t = time.perf_counter()
@@ -512,7 +561,7 @@ class RngdDmabufBackend:
                     while len(self._plans) > self.plan_cache:
                         self._plans.popitem(last=False)
             t2 = time.perf_counter()
-            receipt = self._run(prepared, dict(sync=t1 - t0, plan=t2 - t1))
+            receipt = self._run(prepared, dict(sync=t1 - t0, plan=t2 - t1), owner)
             receipt['plan_cached'] = hit
             receipt['exports'] = sum(r.exports for r in regions)
             receipt['profile']['total'] = time.perf_counter() - t0
@@ -540,7 +589,26 @@ class RngdDmabufBackend:
 
     def close(self):
         with self._lock:
+            if self._uncertain is not None:
+                raise DmaCompletionUncertain('DMA completion is uncertain; cannot close backend')
             self._plans.clear()
             if self._ctx is not None:
                 self._native.close(self._ctx)
                 self._ctx = None
+
+    def recover(self):
+        """Release quarantined owners only after native CQEs prove DMA quiescence. The ring remains broken."""
+        with self._lock:
+            if self._uncertain is None:
+                return True
+            pending, owner = self._uncertain
+            if not self._native.quiesce(self._ctx):
+                return False
+            self._uncertain = None
+            self._plans.clear()
+            _QUARANTINED.pop(id(self), None)
+        for region in pending.regions:
+            with region.lock:
+                region._quarantined -= 1
+                region.release_pins()
+        return True

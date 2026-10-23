@@ -10,7 +10,8 @@ the GPU-initiated path is refused, because `cudaHostRegisterIoMemory` on the RNG
 - RNGD driver 2026.4.0 with `NPU_PDMA_CAPS_DMABUF`.
 - The native library `build/librngd_dmabuf.so`:
   `python native/build.py --target rngd-dmabuf --driver-root /usr/src/furiosa-driver-rngd-2026.4.0`
-  (raw io_uring syscalls, so no liburing is needed).
+  (raw io_uring syscalls, so no liburing is needed). This safety update requires native ABI 3; rebuild the
+  library and its manifest together. ABI 2 libraries are rejected before opening a device.
 
 ```python
 from hetero_p2p.gpu import RngdDmabufBackend, cuda_region
@@ -27,10 +28,31 @@ backend.read(npu_offset, region, region_offset=0, length=n)  # RNGD DRAM -> GPU
 | `cuda_region(tensor)` | `CudaRegion` (memory kind `cuda`) registered once per tensor and reused. It holds the tensor, so the memory cannot be freed while registered. `release_region(tensor)` closes the exports. |
 | `CudaRegion` exports | Transfers larger than one slice use **16 MiB slices** (configurable, at most 256 MiB). A transfer no larger than one slice uses an export of exactly its own range. Both kinds are made on first use and kept; up to 256 exact-range exports per region, least recently used evicted, never while a plan names them. |
 | `RngdDmabufBackend` | One device FD and one io_uring per RNGD, kept open across transfers (in-process, no helper process). `queue_depth` commands in flight (default 4), `descriptors_per_command` 2 MiB descriptors per command (default 64), one DMA-BUF per command. `poll=True` (default): completion-polled ring. `spread` (default = `poll`): a transfer too small to fill the queue is cut into about `queue_depth` commands of at least 256 KiB. Prepared plans of repeated copies are cached (`cache=True`). |
-| `read` / `write` / `copy` | Return a receipt (`cqe_result`, `completed`, `requested`, `bytes_requested`, `seconds`, …) only after every CQE was reaped, as `RngdPdmaBackend`. Any failure raises. The native run validates the whole request before the first submission, submits nothing after a failed command, and still reaps every submitted one, so nothing is left in flight. `write` synchronizes the GPU first (`ready=None`), or not (`ready=True`, the caller already did), or waits on a `torch.cuda.Event` / stream (`ready=event`). `copy` moves several ranges under one fence (the batch API). Each receipt has a `profile`. |
+| `read` / `write` / `copy` | Return a receipt (`cqe_result`, `completed`, `requested`, `bytes_requested`, `seconds`, …) only after every CQE was reaped. Any failure raises; unknown DMA completion quarantines the allocations (below). The native run validates the whole request before the first submission and submits nothing after a failed command. `write` synchronizes the GPU first (`ready=None`), or not (`ready=True`, the caller already did), or waits on a `torch.cuda.Event` / stream (`ready=event`). `copy` moves several ranges under one fence (the batch API). Each receipt has a `profile`. |
 | `paths.resolve(src, dst)` | Per-pair path table (below). |
 | `DmabufPDTransport` | `opt_prime.accel.pd` `Transport` (`supports` / `transfer` / `finish` / `recover`) for GPU prefill → RNGD decode and back. |
 | `DmabufKVTransport` | ai-rm `KVTransport`, entry point `airm.kv_transports:p2p-dmabuf`, with `bind(request_id, DmabufBinding(...))` like `p2p`. |
+
+If a fatal ring error prevents draining submitted commands, `rd_run` returns `RD_UNCERTAIN` (-4096), and Python
+raises `DmaCompletionUncertain`. The native descriptors, ring, current request owners, regions and exports stay
+alive, even if the caller drops the backend. Quarantined regions cannot be used, closed or have their exports
+evicted. `DmabufPDTransport.finish()` refuses that request and `recover()` returns `False` while completion is
+unknown. A failed command with an observed CQE is drained and does not need this quarantine.
+
+`backend.recover()` (also called by PD recovery) polls the existing ring without submitting more work. It returns
+`True` and releases the quarantine only after every outstanding CQE has actually been observed, including error
+CQEs. The damaged ring still refuses transfers; close it and create a new backend. If those CQEs never arrive,
+the quarantine remains for the process lifetime. Closing the backend or receiving a syscall error is not a fence.
+Direct `transfer(DmabufPlan(...))` users must keep their raw FDs and allocations alive until recovery proves
+quiescence; plans from `plan_copies` additionally track their CUDA regions.
+
+The ai-rm adapter requires the RNGD tier's full `furiosa:<index>` identity to match its configured
+`/dev/rngd/npu<index>ch0`, and the GPU tier's `nvidia:<index>` identity to match the bound region's CUDA device.
+No logical-to-physical device remapping is inferred. Read batches reject overlapping original CUDA address ranges
+per device before exporting, including overlaps between different `CudaRegion` views and exact-range exports.
+
+CPU regressions include a native ring fault-injection harness compiled with GCC and test-only UAPI structures.
+These checks exercise error handling and ownership; they do not validate the installed driver ABI or real DMA.
 
 ### Path table (`hetero_p2p.paths`)
 
