@@ -54,6 +54,10 @@ per device before exporting, including overlaps between different `CudaRegion` v
 CPU regressions include a native ring fault-injection harness compiled with GCC and test-only UAPI structures.
 These checks exercise error handling and ownership; they do not validate the installed driver ABI or real DMA.
 
+The follow-up [ABI 3 hardware validation](validation-2026-10-23.md#follow-up-real-gpurngd-hardware)
+built against the actual 2026.4.0 headers, passed all three GPU/RNGD device tests and a real rm-core adapter
+round trip, and checked five transfer sizes on pair 1:1. Fatal driver-failure behavior was not injected into hardware.
+
 ### Path table (`hetero_p2p.paths`)
 
 | src → dst | Status | Initiator, mechanism | Host requirement |

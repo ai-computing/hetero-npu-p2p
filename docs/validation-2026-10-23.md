@@ -73,3 +73,46 @@ python native/build.py --target rngd-dmabuf --driver-root /usr/src/furiosa-drive
 Unknown completion retains the native descriptors, ring, request owners, regions and exports until actual CQEs
 prove quiescence. If those CQEs never arrive, quarantine remains for the process lifetime. Neither closing a
 backend nor receiving a syscall error establishes a fence. No production hardware deployment was performed.
+
+## Follow-up: real GPU/RNGD hardware
+
+The ABI 3 library was built from `d5eabfa3a5913791d0d9538584d17c97d7d557fb` against the installed
+RNGD **2026.4.0** headers, using `native/build.py --target rngd-dmabuf`. Library SHA256:
+`f0a6c4bccfc7218d72e799925bd32da501cb3577088f068029afbb91c2c25507`;
+native source SHA256: `12718f4c3fa631bec1156ee3441fcbb90b4fd85bb589f17ffb035bfa78f4cb3c`.
+The generated manifest hash matched the library and `rd_abi()` returned **3**.
+
+On the GPU/RNGD host, Linux 6.8.0-106-generic, NVIDIA open driver 580.178.04, PyTorch 2.10.0+cu128,
+physical A100 80 GB GPU **1** and RNGD **1** were used. Device-handle checks and `furiosa-smi ps`
+confirmed the selected RNGD was idle before each phase. Another process had used RNGD 0, which was excluded.
+All work ran from a separate clone and scratch directory; installed environments and serving processes were untouched.
+
+All **three** `tests/test_gpu_device.py` cases passed with **zero skips**: API round trip, invalid descriptors
+rejected without submission, and eight-command transfers across interrupt queue depths 1/2/3/8 plus polled
+depths 1/4. Every successful receipt reported all commands complete and the data compared equal.
+[Raw test result](gpu-rngd/abi3-device-tests-20261023.json).
+
+The existing `examples/gpu_rngd_dmabuf.py` then ran only pair `1:1`, five calls per direction/size:
+
+| MiB | GPU → RNGD GB/s | RNGD → GPU GB/s |
+|---:|---:|---:|
+| 2 | 12.87 | 13.82 |
+| 4 | 16.16 | 15.89 |
+| 16 | 17.45 | 18.24 |
+| 64 | 14.63 | 20.74 |
+| 256 | 14.75 | 22.19 |
+
+Each row passed sampled CPU BAR checks, full GPU destination comparison and an independent marker written
+through the RNGD BAR. [Raw measurements](gpu-rngd/abi3-20261023.json) retain all timings and environment fields.
+These five-repetition medians establish functionality on this pair; they do not establish a performance
+improvement or cover every pair. The test process exited and closed its backends and exports.
+
+An additional actual-memory check used `DmabufKVTransport` with rm-core's token-major BF16 layout
+(4 KiB per token) and the same physical pair. Wrong GPU and RNGD tier indices were rejected before exports;
+a 2 MiB adapter round trip was byte-exact and emitted four transfer metric samples. Overlapping original
+CUDA destinations were rejected before an additional export or DMA.
+[Raw adapter result](gpu-rngd/abi3-adapter-20261023.json). These buffers were synthetic test regions on
+an idle RNGD, not an inference engine's allocated KV cache.
+
+No fatal DMA failure was injected into real hardware. Uncertain-completion retention and recovery remain
+covered by the native fault harness; successful normal transfers do not prove behavior after an actual driver fault.
